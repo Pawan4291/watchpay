@@ -349,7 +349,7 @@ async function baseConnect(silent: boolean) {
 
   let transport;
   if (isInIframe()) {
-    transport = PostMessageTransport.forClient();
+    transport = PostMessageTransport.forClient({ target: window.parent, targetOrigin: '*' });
   } else if (hasExtension()) {
     transport = ExtensionTransport.forClient();
   } else {
