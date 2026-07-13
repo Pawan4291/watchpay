@@ -10,6 +10,8 @@ export const WALLET_API_BASE = 'https://wallet-api.unicity.network';
 export const NOSTR_RELAY = 'wss://nostr-relay.testnet.unicity.network';
 export const SPHERE_WALLET_URL = 'https://sphere.unicity.network';
 
+export const WATCHPAY_AGENT_NAMETAG = '@watchpay'; // the agent's real, already-registered wallet
+
 // Rate settings
 export const DEFAULT_RATE_PER_30S = 0.001; // UCT
 export const TICK_INTERVAL_MS = 30000; // 30 seconds

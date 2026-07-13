@@ -1,6 +1,6 @@
 // Simple reactive store for demo state
 import { useState, useEffect } from 'react';
-import { sendUCT } from './sphere';
+import { WATCHPAY_AGENT_NAMETAG } from './constants';
 
 export interface User {
   id: string;
@@ -10,12 +10,8 @@ export interface User {
   isCreator: boolean;
 }
 
-export interface AppWallet {
-  address: string;
-  nametag: string;
-  mnemonic: string;
-  realNametag: string;
-  balance: number; // UCT balance
+export interface WPWallet {
+  balance: number; // WP points (1:1 with UCT)
   lastUpdated: string;
 }
 
@@ -30,33 +26,24 @@ export interface WatchSession {
 
 interface StoreState {
   user: User | null;
-  wallet: AppWallet | null;
+  wallet: WPWallet | null;
   currentSession: WatchSession | null;
   isConnecting: boolean;
-  isWalletCreating: boolean;
   sphereClient: any | null;
 }
 
-// In-memory store (would be backed by Supabase in production)
 let storeState: StoreState = {
   user: null,
   wallet: null,
   currentSession: null,
   isConnecting: false,
-  isWalletCreating: false,
   sphereClient: null,
 };
 
 const listeners = new Set<() => void>();
+function notifyListeners() { listeners.forEach(l => l()); }
 
-function notifyListeners() {
-  listeners.forEach(l => l());
-}
-
-export function getStore() {
-  return storeState;
-}
-
+export function getStore() { return storeState; }
 export function setStore(partial: Partial<StoreState>) {
   storeState = { ...storeState, ...partial };
   notifyListeners();
@@ -73,9 +60,9 @@ export function useStore() {
 }
 
 export async function trySilentLogin(): Promise<void> {
-  const { trySilentConnect, createUserWallet, getBalance } = await import('./sphere');
+  const { trySilentConnect } = await import('./sphere');
   const result = await trySilentConnect();
-  if (!result) return; // no popup, just stay logged out until user clicks Connect
+  if (!result) return;
   await finishLogin(result.identity);
 }
 
@@ -93,48 +80,21 @@ export async function loginWithSphere(): Promise<void> {
 }
 
 async function finishLogin(identity: { chainPubkey: string; nametag?: string; directAddress?: string }): Promise<void> {
-
-  const { createUserWallet, getBalance } = await import('./sphere');
-  const existing = await fetch(`/api/wallet-get?chainPubkey=${encodeURIComponent(identity.chainPubkey)}`).then(r => r.json());
-  let wallet;
-  if (existing.wallet) {
-    wallet = {
-      address: existing.wallet.address,
-      nametag: existing.wallet.nametag,
-      mnemonic: existing.wallet.mnemonic_encrypted,
-      chainPubkey: identity.chainPubkey,
-    };
-  } else {
-    const desiredNametag = `wp_${(identity.nametag ?? 'user').replace(/^@/, '')}_${identity.chainPubkey.slice(0, 6)}`;
-    wallet = await createUserWallet(desiredNametag);
-    const nametagForDb = wallet.nametag && wallet.nametag.length > 0 ? wallet.nametag : `addr_${wallet.address.replace(/[^a-zA-Z0-9]/g, '').slice(-20)}`;
-    await fetch('/api/wallet-save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chainPubkey: identity.chainPubkey, address: wallet.address, nametag: nametagForDb, mnemonic: wallet.mnemonic }),
-    });
-  }
-  const balances = await getBalance(wallet.mnemonic);
-  const uctBalance = balances.find(b => b.symbol === 'UCT');
+  const res = await fetch(`/api/points-get?chainPubkey=${encodeURIComponent(identity.chainPubkey)}`).then(r => r.json());
 
   const realUser: User = {
     id: identity.chainPubkey,
-    nametag: identity.nametag ?? wallet.nametag,
+    nametag: identity.nametag ?? identity.chainPubkey.slice(0, 8),
     realNametag: identity.nametag,
     directAddress: identity.directAddress,
     isCreator: false,
   };
 
-  const appWallet: AppWallet = {
-    address: wallet.address,
-    nametag: wallet.nametag,
-    mnemonic: wallet.mnemonic,
-    realNametag: identity.nametag ?? '',
-    balance: uctBalance ? Number(uctBalance.totalAmount) : 0,
-    lastUpdated: new Date().toISOString(),
-  };
-
-  setStore({ user: realUser, wallet: appWallet, isConnecting: false });
+  setStore({
+    user: realUser,
+    wallet: { balance: res.balance ?? 0, lastUpdated: new Date().toISOString() },
+    isConnecting: false,
+  });
 }
 
 export async function disconnectWallet(): Promise<void> {
@@ -142,16 +102,10 @@ export async function disconnectWallet(): Promise<void> {
 }
 
 export async function refreshBalance(): Promise<void> {
-  if (!storeState.wallet) return;
-  const { getBalance } = await import('./sphere');
-  const balances = await getBalance(storeState.wallet.mnemonic);
-  const uctBalance = balances.find(b => b.symbol === 'UCT');
+  if (!storeState.user) return;
+  const res = await fetch(`/api/points-get?chainPubkey=${encodeURIComponent(storeState.user.id)}`).then(r => r.json());
   setStore({
-    wallet: {
-      ...storeState.wallet,
-      balance: uctBalance ? Number(uctBalance.totalAmount) / 1e18 : storeState.wallet.balance,
-      lastUpdated: new Date().toISOString(),
-    },
+    wallet: { balance: res.balance ?? 0, lastUpdated: new Date().toISOString() },
   });
 }
 
@@ -171,10 +125,7 @@ export function startWatchSession(videoId: string): WatchSession {
 export function recordTick(rate: number): boolean {
   const { wallet, currentSession } = storeState;
   if (!wallet || !currentSession) return false;
-
-  if (wallet.balance < rate) {
-    return false; // insufficient balance
-  }
+  if (wallet.balance < rate) return false;
 
   const newBalance = wallet.balance - rate;
   const newSession: WatchSession = {
@@ -188,24 +139,23 @@ export function recordTick(rate: number): boolean {
     currentSession: newSession,
   });
 
+  // fire-and-forget: persist the deduction server-side
+  fetch('/api/points-tick', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chainPubkey: storeState.user?.id, videoId: currentSession.videoId, amount: rate }),
+  }).catch(err => console.error('[WatchPay] tick sync failed:', err));
+
   return true;
 }
 
 export function endWatchSession(): void {
   if (!storeState.currentSession) return;
-  setStore({
-    currentSession: { ...storeState.currentSession, active: false },
-  });
-  // Don't clear session so we can show stats
+  setStore({ currentSession: { ...storeState.currentSession, active: false } });
 }
 
 export async function depositUCT(amount: number): Promise<{ success: boolean; txId?: string }> {
-  if (!storeState.wallet) return { success: false };
-  const recipientTarget = storeState.wallet.nametag || storeState.wallet.address;
-  if (!recipientTarget) {
-    console.error('[WatchPay] depositUCT: no nametag or address on wallet', storeState.wallet);
-    return { success: false };
-  }
+  if (!storeState.user) return { success: false };
   let client = storeState.sphereClient;
   if (!client) {
     const { connectRealWallet } = await import('./sphere');
@@ -214,32 +164,37 @@ export async function depositUCT(amount: number): Promise<{ success: boolean; tx
     setStore({ sphereClient: client });
   }
   const { requestDeposit, uctToSmallestUnit } = await import('./sphere');
- const result = await requestDeposit(client, recipientTarget, uctToSmallestUnit(amount));
-  const txId = result.txId ?? '';
-  const newBalance = storeState.wallet.balance + amount;
-  setStore({
-    wallet: {
-      ...storeState.wallet,
-      balance: newBalance,
-      lastUpdated: new Date().toISOString(),
-    },
-  });
-  return { success: true, txId };
+  const result = await requestDeposit(client, WATCHPAY_AGENT_NAMETAG, uctToSmallestUnit(amount));
+
+  // Poll to confirm + credit points (agent-side detection)
+  const check = await fetch(`/api/points-deposit-check?chainPubkey=${encodeURIComponent(storeState.user.id)}&senderNametag=${encodeURIComponent(storeState.user.realNametag ?? '')}`).then(r => r.json());
+
+  if (check.credited > 0 && storeState.wallet) {
+    setStore({
+      wallet: { ...storeState.wallet, balance: storeState.wallet.balance + check.credited, lastUpdated: new Date().toISOString() },
+    });
+  }
+
+  return { success: true, txId: result.txId };
 }
 
 export async function withdrawUCT(amount: number): Promise<{ success: boolean; txId?: string }> {
-  if (!storeState.wallet || storeState.wallet.balance < amount) {
+  if (!storeState.user || !storeState.wallet || storeState.wallet.balance < amount) {
     return { success: false };
   }
-  const result = await sendUCT(storeState.wallet.mnemonic, storeState.wallet.realNametag, String(amount), 'Withdraw');
-  const txId = result.id;
-  const newBalance = storeState.wallet.balance - amount;
+  const res = await fetch('/api/points-withdraw', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chainPubkey: storeState.user.id, realNametag: storeState.user.realNametag, amount }),
+  }).then(r => r.json());
+
+  if (res.error) {
+    console.error('[WatchPay] withdraw failed:', res.error);
+    return { success: false };
+  }
+
   setStore({
-    wallet: {
-      ...storeState.wallet,
-      balance: newBalance,
-      lastUpdated: new Date().toISOString(),
-    },
+    wallet: { ...storeState.wallet, balance: storeState.wallet.balance - amount, lastUpdated: new Date().toISOString() },
   });
-  return { success: true, txId };
+  return { success: true, txId: res.txId };
 }
