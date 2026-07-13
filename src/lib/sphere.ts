@@ -390,13 +390,17 @@ export async function connectRealWallet(): Promise<{ identity: ConnectIdentity; 
 }
 
 export async function requestDeposit(client: any, appWalletNametag: string, amountSmallestUnit: string): Promise<{ txId?: string }> {
-  const recipient = appWalletNametag.startsWith('@') ? appWalletNametag : `@${appWalletNametag}`;
-  const result = await client.intent('send', {
+  const recipient = appWalletNametag && appWalletNametag.startsWith('@') ? appWalletNametag : `@${appWalletNametag}`;
+  const payload = {
     to: recipient,
     recipient: recipient,
     amount: amountSmallestUnit,
     coinId: UCT_COIN_ID,
-  });
+  };
+  console.log('[WatchPay] requestDeposit payload:', JSON.stringify(payload));
+  console.log('[WatchPay] client:', client);
+  const result = await client.intent('send', payload);
+  console.log('[WatchPay] intent result:', result);
   return { txId: result?.id };
 }
 
