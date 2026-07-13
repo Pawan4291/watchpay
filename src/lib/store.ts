@@ -156,45 +156,57 @@ export function endWatchSession(): void {
 
 export async function depositUCT(amount: number): Promise<{ success: boolean; txId?: string }> {
   if (!storeState.user) return { success: false };
-  let client = storeState.sphereClient;
-  if (!client) {
-    const { connectRealWallet } = await import('./sphere');
-    const conn = await connectRealWallet();
-    client = conn.client;
-    setStore({ sphereClient: client });
+  try {
+    let client = storeState.sphereClient;
+    if (!client) {
+      const { connectRealWallet } = await import('./sphere');
+      const conn = await connectRealWallet();
+      client = conn.client;
+      setStore({ sphereClient: client });
+    }
+    const { requestDeposit, uctToSmallestUnit } = await import('./sphere');
+    const result = await requestDeposit(client, WATCHPAY_AGENT_NAMETAG, uctToSmallestUnit(amount));
+    console.log('[WatchPay] deposit intent result:', result);
+
+    // Poll to confirm + credit points (agent-side detection)
+    const check = await fetch(`/api/points-deposit-check?chainPubkey=${encodeURIComponent(storeState.user.id)}&senderNametag=${encodeURIComponent(storeState.user.realNametag ?? '')}`).then(r => r.json());
+    console.log('[WatchPay] deposit-check response:', check);
+
+    if (check.credited > 0 && storeState.wallet) {
+      setStore({
+        wallet: { ...storeState.wallet, balance: storeState.wallet.balance + check.credited, lastUpdated: new Date().toISOString() },
+      });
+    }
+
+    return { success: true, txId: result.txId };
+  } catch (err) {
+    console.error('[WatchPay] depositUCT failed:', err);
+    return { success: false };
   }
-  const { requestDeposit, uctToSmallestUnit } = await import('./sphere');
-  const result = await requestDeposit(client, WATCHPAY_AGENT_NAMETAG, uctToSmallestUnit(amount));
-
-  // Poll to confirm + credit points (agent-side detection)
-  const check = await fetch(`/api/points-deposit-check?chainPubkey=${encodeURIComponent(storeState.user.id)}&senderNametag=${encodeURIComponent(storeState.user.realNametag ?? '')}`).then(r => r.json());
-
-  if (check.credited > 0 && storeState.wallet) {
-    setStore({
-      wallet: { ...storeState.wallet, balance: storeState.wallet.balance + check.credited, lastUpdated: new Date().toISOString() },
-    });
-  }
-
-  return { success: true, txId: result.txId };
 }
 
 export async function withdrawUCT(amount: number): Promise<{ success: boolean; txId?: string }> {
   if (!storeState.user || !storeState.wallet || storeState.wallet.balance < amount) {
     return { success: false };
   }
-  const res = await fetch('/api/points-withdraw', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chainPubkey: storeState.user.id, realNametag: storeState.user.realNametag, amount }),
-  }).then(r => r.json());
+  try {
+    const res = await fetch('/api/points-withdraw', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chainPubkey: storeState.user.id, realNametag: storeState.user.realNametag, amount }),
+    }).then(r => r.json());
 
-  if (res.error) {
-    console.error('[WatchPay] withdraw failed:', res.error);
+    if (res.error) {
+      console.error('[WatchPay] withdraw failed:', res.error);
+      return { success: false };
+    }
+
+    setStore({
+      wallet: { ...storeState.wallet, balance: storeState.wallet.balance - amount, lastUpdated: new Date().toISOString() },
+    });
+    return { success: true, txId: res.txId };
+  } catch (err) {
+    console.error('[WatchPay] withdrawUCT failed:', err);
     return { success: false };
   }
-
-  setStore({
-    wallet: { ...storeState.wallet, balance: storeState.wallet.balance - amount, lastUpdated: new Date().toISOString() },
-  });
-  return { success: true, txId: res.txId };
 }
