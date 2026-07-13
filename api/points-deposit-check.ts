@@ -9,10 +9,10 @@ export default async function handler(req: any, res: any) {
   try {
     const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     const { sphere } = await Sphere.init({
-      ...createNodeProviders({ network: 'testnet2' }),
-      network: 'testnet2',
-      mnemonic: process.env.AGENT_WALLET_MNEMONIC!,
-    } as any);
+  ...createNodeProviders({ network: 'testnet2', dataDir: '/tmp/sphere-data', tokensDir: '/tmp/tokens-data' }),
+  network: 'testnet2',
+  mnemonic: process.env.AGENT_WALLET_MNEMONIC!,
+} as any);
 
     const history = await sphere.payments.getHistory();
 
