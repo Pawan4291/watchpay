@@ -90,7 +90,7 @@ export async function loginWithSphere(): Promise<void> {
 }
 
 async function finishLogin(identity: { chainPubkey: string; nametag?: string; directAddress?: string }): Promise<void> {
-  console.log('[WatchPay] raw identity:', JSON.stringify(identity, null, 2));
+ 
   const { createUserWallet, getBalance } = await import('./sphere');
   const wallet = await createUserWallet(identity.nametag ?? `user_${Date.now()}`);
   const balances = await getBalance(wallet.mnemonic);
@@ -98,7 +98,7 @@ async function finishLogin(identity: { chainPubkey: string; nametag?: string; di
 
   const realUser: User = {
     id: identity.chainPubkey,
-    nametag: wallet.nametag,
+    nametag: identity.nametag ?? wallet.nametag,
     realNametag: identity.nametag,
     directAddress: identity.directAddress,
     isCreator: false,
