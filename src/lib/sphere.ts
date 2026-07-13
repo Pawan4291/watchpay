@@ -329,20 +329,36 @@ export async function getBalance(mnemonic: string): Promise<BalanceAsset[]> {
  *   coinId: UCT_COIN_ID,                // lowercase 64-hex required (not symbol)
  * });
  */
-export async function connectRealWallet(): Promise<{ identity: ConnectIdentity }> {
+async function baseConnect(silent: boolean) {
   const { autoConnect } = await import('@unicitylabs/sphere-sdk/connect/browser');
   const { SPHERE_NETWORKS } = await import('@unicitylabs/sphere-sdk/connect');
 
   const result = await autoConnect({
     dapp: { name: 'WatchPay', description: 'Pay-per-30-seconds video watching on Unicity Sphere', url: window.location.origin },
-   walletUrl: SPHERE_WALLET_URL,
+    walletUrl: SPHERE_WALLET_URL,
     network: SPHERE_NETWORKS.testnet2,
-    silent: true,
+    silent,
     permissions: ['identity:read', 'balance:read', 'transfer:request', 'sign:request'],
   } as any);
 
   sessionStorage.setItem('sphere-session', result.connection.sessionId);
-  return { identity: result.connection.identity };
+  return { client: result.client, identity: result.connection.identity as ConnectIdentity };
+}
+
+export async function trySilentConnect(): Promise<{ identity: ConnectIdentity } | null> {
+  try {
+    return await baseConnect(true);
+  } catch {
+    return null; // fails quietly, no popup shown
+  }
+}
+
+export async function connectRealWallet(): Promise<{ identity: ConnectIdentity }> {
+  return baseConnect(false); // real popup, only call this from a button click
+}
+
+export function clearSession(): void {
+  sessionStorage.removeItem('sphere-session');
 }
 
 /**

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedBackground, CustomCursor } from './components/AnimatedBackground';
 import { Nav } from './components/Nav';
@@ -174,6 +174,10 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('watch');
   const { user } = useStore();
+
+  useEffect(() => {
+    import('./lib/store').then(m => m.trySilentLogin());
+  }, []);
 
   if (showSplash) {
     return (

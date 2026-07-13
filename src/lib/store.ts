@@ -70,12 +70,24 @@ export function useStore() {
   return storeState;
 }
 
+export async function trySilentLogin(): Promise<void> {
+  const { trySilentConnect, createUserWallet, getBalance } = await import('./sphere');
+  const result = await trySilentConnect();
+  if (!result) return; // no popup, just stay logged out until user clicks Connect
+  await finishLogin(result.identity);
+}
+
 export async function loginWithSphere(): Promise<void> {
   setStore({ isConnecting: true });
 
   const { connectRealWallet, createUserWallet, getBalance } = await import('./sphere');
   const { identity } = await connectRealWallet();
 
+ await finishLogin(identity);
+}
+
+async function finishLogin(identity: { chainPubkey: string; nametag?: string; directAddress?: string }): Promise<void> {
+  const { createUserWallet, getBalance } = await import('./sphere');
   const wallet = await createUserWallet(identity.nametag ?? `user_${Date.now()}`);
   const balances = await getBalance(wallet.mnemonic);
   const uctBalance = balances.find(b => b.symbol === 'UCT');
