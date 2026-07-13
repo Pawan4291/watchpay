@@ -329,36 +329,67 @@ export async function getBalance(mnemonic: string): Promise<BalanceAsset[]> {
  *   coinId: UCT_COIN_ID,                // lowercase 64-hex required (not symbol)
  * });
  */
-async function baseConnect(silent: boolean) {
-  const { autoConnect } = await import('@unicitylabs/sphere-sdk/connect/browser');
-  const { SPHERE_NETWORKS } = await import('@unicitylabs/sphere-sdk/connect');
+const SESSION_KEY = 'watchpay-sphere-session';
 
-  const result = await autoConnect({
-    dapp: { name: 'WatchPay', description: 'Pay-per-30-seconds video watching on Unicity Sphere', url: window.location.origin },
-    walletUrl: SPHERE_WALLET_URL,
+function isInIframe(): boolean {
+  try { return window.self !== window.top; } catch { return true; }
+}
+
+function hasExtension(): boolean {
+  return typeof (window as any).sphereExtension !== 'undefined';
+}
+
+async function baseConnect(silent: boolean) {
+  const { ConnectClient, SPHERE_NETWORKS } = await import('@unicitylabs/sphere-sdk/connect');
+  const { PostMessageTransport, ExtensionTransport } = await import('@unicitylabs/sphere-sdk/connect/browser');
+
+  const dapp = { name: 'WatchPay', description: 'Pay-per-30-seconds video watching on Unicity Sphere', url: window.location.origin };
+  const permissions = ['identity:read', 'balance:read', 'transfer:request', 'sign:request'];
+
+  let transport;
+  if (isInIframe()) {
+    transport = PostMessageTransport.forClient();
+  } else if (hasExtension()) {
+    transport = ExtensionTransport.forClient();
+  } else {
+    const popup = window.open(
+      `${SPHERE_WALLET_URL}/connect?origin=${encodeURIComponent(window.location.origin)}`,
+      'sphere-wallet',
+      'width=420,height=650'
+    );
+    if (!popup) throw new Error('Popup blocked. Please allow popups for this site.');
+    transport = PostMessageTransport.forClient({ target: popup, targetOrigin: SPHERE_WALLET_URL });
+  }
+
+  const savedSession = sessionStorage.getItem(SESSION_KEY);
+  const client = new ConnectClient({
+    transport,
+    dapp,
     network: SPHERE_NETWORKS.testnet2,
     silent,
-    permissions: ['identity:read', 'balance:read', 'transfer:request', 'sign:request'],
+    permissions,
+    resumeSessionId: savedSession ?? undefined,
   } as any);
 
-  sessionStorage.setItem('sphere-session', result.connection.sessionId);
-  return { client: result.client, identity: result.connection.identity as ConnectIdentity };
+  const result = await client.connect();
+  sessionStorage.setItem(SESSION_KEY, result.sessionId);
+  return { client, identity: result.identity as ConnectIdentity };
 }
 
 export async function trySilentConnect(): Promise<{ identity: ConnectIdentity } | null> {
   try {
     return await baseConnect(true);
   } catch {
-    return null; // fails quietly, no popup shown
+    return null;
   }
 }
 
 export async function connectRealWallet(): Promise<{ identity: ConnectIdentity }> {
-  return baseConnect(false); // real popup, only call this from a button click
+  return baseConnect(false);
 }
 
 export function clearSession(): void {
-  sessionStorage.removeItem('sphere-session');
+  sessionStorage.removeItem(SESSION_KEY);
 }
 
 /**
