@@ -28,8 +28,8 @@ export function WalletCard() {
     setLoading(true);
     try {
       const res = await depositUCT(amount);
-      if (res.success && res.txId) {
-        setLastTx(res.txId);
+      if (res.success) {
+        setLastTx(res.txId || 'pending confirmation');
         setTxType('deposit');
         setDepositAmount('');
         setMode(null);
