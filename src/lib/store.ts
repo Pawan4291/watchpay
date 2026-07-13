@@ -79,11 +79,14 @@ export async function trySilentLogin(): Promise<void> {
 
 export async function loginWithSphere(): Promise<void> {
   setStore({ isConnecting: true });
-
-  const { connectRealWallet, createUserWallet, getBalance } = await import('./sphere');
-  const { identity } = await connectRealWallet();
-
- await finishLogin(identity);
+  try {
+    const { connectRealWallet } = await import('./sphere');
+    const { identity } = await connectRealWallet();
+    await finishLogin(identity);
+  } catch (err) {
+    console.error('[WatchPay] loginWithSphere failed:', err);
+    setStore({ isConnecting: false });
+  }
 }
 
 async function finishLogin(identity: { chainPubkey: string; nametag?: string; directAddress?: string }): Promise<void> {
