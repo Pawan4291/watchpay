@@ -13,7 +13,7 @@ export default async function handler(req: any, res: any) {
     if (!existing || existing.balance < amount) return res.status(400).json({ error: 'insufficient balance' });
 
     const { sphere } = await Sphere.init({
-      ...createNodeProviders({ network: 'testnet2' }),
+      ...createNodeProviders({ network: 'testnet2', dataDir: '/tmp/sphere-data', tokensDir: '/tmp/tokens-data', oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' } }),
       network: 'testnet2',
       mnemonic: process.env.AGENT_WALLET_MNEMONIC!,
     } as any);

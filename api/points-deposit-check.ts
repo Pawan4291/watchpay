@@ -9,7 +9,7 @@ export default async function handler(req: any, res: any) {
   try {
     const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     const { sphere } = await Sphere.init({
-  ...createNodeProviders({ network: 'testnet2', dataDir: '/tmp/sphere-data', tokensDir: '/tmp/tokens-data' }),
+  ...createNodeProviders({ network: 'testnet2', dataDir: '/tmp/sphere-data', tokensDir: '/tmp/tokens-data', oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' } }),
   network: 'testnet2',
   mnemonic: process.env.AGENT_WALLET_MNEMONIC!,
 } as any);
