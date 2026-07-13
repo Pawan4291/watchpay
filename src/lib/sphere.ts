@@ -393,7 +393,7 @@ export async function requestDeposit(client: any, appWalletNametag: string, amou
  const result = await client.intent('send', {
   recipient: appWalletNametag,
   amount: amountSmallestUnit,
-  coinId: 'UCT',
+  coinId: UCT_COIN_ID,
 });
   return { txId: result?.id };
 }
