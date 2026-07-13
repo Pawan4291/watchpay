@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/points-deposit-check.ts": {
+      "includeFiles": "node_modules/@unicitylabs/state-transition-sdk/**"
+    },
+    "api/points-withdraw.ts": {
+      "includeFiles": "node_modules/@unicitylabs/state-transition-sdk/**"
+    }
+  }
+}
