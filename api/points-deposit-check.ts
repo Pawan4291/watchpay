@@ -14,7 +14,8 @@ export default async function handler(req: any, res: any) {
   mnemonic: process.env.AGENT_WALLET_MNEMONIC!,
 } as any);
 
-    const history = await sphere.payments.getHistory();
+   await sphere.payments.receive();
+const history = await sphere.payments.getHistory();
 
     // TEMP DEBUG — log raw shape so we can see real field names
     console.log('[WatchPay] raw history sample:', JSON.stringify(history?.slice?.(0, 3) ?? history, null, 2));
