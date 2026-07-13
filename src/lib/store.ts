@@ -107,10 +107,11 @@ async function finishLogin(identity: { chainPubkey: string; nametag?: string; di
   } else {
     const desiredNametag = `wp_${(identity.nametag ?? 'user').replace(/^@/, '')}_${identity.chainPubkey.slice(0, 6)}`;
     wallet = await createUserWallet(desiredNametag);
+    const nametagForDb = wallet.nametag && wallet.nametag.length > 0 ? wallet.nametag : `addr_${wallet.address.replace(/[^a-zA-Z0-9]/g, '').slice(-20)}`;
     await fetch('/api/wallet-save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chainPubkey: identity.chainPubkey, address: wallet.address, nametag: wallet.nametag, mnemonic: wallet.mnemonic }),
+      body: JSON.stringify({ chainPubkey: identity.chainPubkey, address: wallet.address, nametag: nametagForDb, mnemonic: wallet.mnemonic }),
     });
   }
   const balances = await getBalance(wallet.mnemonic);
