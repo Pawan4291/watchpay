@@ -93,9 +93,25 @@ export async function loginWithSphere(): Promise<void> {
 }
 
 async function finishLogin(identity: { chainPubkey: string; nametag?: string; directAddress?: string }): Promise<void> {
- 
+
   const { createUserWallet, getBalance } = await import('./sphere');
-  const wallet = await createUserWallet(identity.nametag ?? `user_${Date.now()}`);
+  const existing = await fetch(`/api/wallet-get?chainPubkey=${encodeURIComponent(identity.chainPubkey)}`).then(r => r.json());
+  let wallet;
+  if (existing.wallet) {
+    wallet = {
+      address: existing.wallet.address,
+      nametag: existing.wallet.nametag,
+      mnemonic: existing.wallet.mnemonic_encrypted,
+      chainPubkey: identity.chainPubkey,
+    };
+  } else {
+    wallet = await createUserWallet(identity.nametag ?? `user_${Date.now()}`);
+    await fetch('/api/wallet-save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chainPubkey: identity.chainPubkey, address: wallet.address, nametag: wallet.nametag, mnemonic: wallet.mnemonic }),
+    });
+  }
   const balances = await getBalance(wallet.mnemonic);
   const uctBalance = balances.find(b => b.symbol === 'UCT');
 
