@@ -385,8 +385,17 @@ export async function trySilentConnect(): Promise<{ identity: ConnectIdentity } 
   }
 }
 
-export async function connectRealWallet(): Promise<{ identity: ConnectIdentity }> {
+export async function connectRealWallet(): Promise<{ identity: ConnectIdentity; client: any }> {
   return baseConnect(false);
+}
+
+export async function requestDeposit(client: any, appWalletNametag: string, amountSmallestUnit: string): Promise<{ txId?: string }> {
+  const result = await client.intent('send', {
+    to: appWalletNametag,
+    amount: amountSmallestUnit,
+    coinId: UCT_COIN_ID,
+  });
+  return { txId: result?.id };
 }
 
 export function clearSession(): void {

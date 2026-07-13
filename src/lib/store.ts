@@ -34,6 +34,7 @@ interface StoreState {
   currentSession: WatchSession | null;
   isConnecting: boolean;
   isWalletCreating: boolean;
+  sphereClient: any | null;
 }
 
 // In-memory store (would be backed by Supabase in production)
@@ -43,6 +44,7 @@ let storeState: StoreState = {
   currentSession: null,
   isConnecting: false,
   isWalletCreating: false,
+  sphereClient: null,
 };
 
 const listeners = new Set<() => void>();
@@ -81,7 +83,8 @@ export async function loginWithSphere(): Promise<void> {
   setStore({ isConnecting: true });
   try {
     const { connectRealWallet } = await import('./sphere');
-    const { identity } = await connectRealWallet();
+    const { identity, client } = await connectRealWallet();
+    setStore({ sphereClient: client });
     await finishLogin(identity);
   } catch (err) {
     console.error('[WatchPay] loginWithSphere failed:', err);
@@ -177,9 +180,10 @@ export function endWatchSession(): void {
 }
 
 export async function depositUCT(amount: number): Promise<{ success: boolean; txId?: string }> {
-  if (!storeState.wallet) return { success: false };
-  const result = await sendUCT(storeState.wallet.mnemonic, storeState.wallet.nametag, String(amount), 'Deposit');
-  const txId = result.id;
+  if (!storeState.wallet || !storeState.sphereClient) return { success: false };
+  const { requestDeposit, uctToSmallestUnit } = await import('./sphere');
+  const result = await requestDeposit(storeState.sphereClient, storeState.wallet.nametag, uctToSmallestUnit(amount));
+  const txId = result.txId ?? '';
   const newBalance = storeState.wallet.balance + amount;
   setStore({
     wallet: {
