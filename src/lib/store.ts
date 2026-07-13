@@ -180,9 +180,16 @@ export function endWatchSession(): void {
 }
 
 export async function depositUCT(amount: number): Promise<{ success: boolean; txId?: string }> {
-  if (!storeState.wallet || !storeState.sphereClient) return { success: false };
+  if (!storeState.wallet) return { success: false };
+  let client = storeState.sphereClient;
+  if (!client) {
+    const { connectRealWallet } = await import('./sphere');
+    const conn = await connectRealWallet();
+    client = conn.client;
+    setStore({ sphereClient: client });
+  }
   const { requestDeposit, uctToSmallestUnit } = await import('./sphere');
-  const result = await requestDeposit(storeState.sphereClient, storeState.wallet.nametag, uctToSmallestUnit(amount));
+  const result = await requestDeposit(client, storeState.wallet.nametag, uctToSmallestUnit(amount));
   const txId = result.txId ?? '';
   const newBalance = storeState.wallet.balance + amount;
   setStore({
