@@ -390,12 +390,13 @@ export async function connectRealWallet(): Promise<{ identity: ConnectIdentity; 
 }
 
 export async function requestDeposit(client: any, appWalletNametag: string, amountSmallestUnit: string): Promise<{ txId?: string }> {
- const result = await client.intent('send', {
-  to: appWalletNametag,
-  recipient: appWalletNametag,
-  amount: amountSmallestUnit,
-  coinId: UCT_COIN_ID,
-});
+  const recipient = appWalletNametag.startsWith('@') ? appWalletNametag : `@${appWalletNametag}`;
+  const result = await client.intent('send', {
+    to: recipient,
+    recipient: recipient,
+    amount: amountSmallestUnit,
+    coinId: UCT_COIN_ID,
+  });
   return { txId: result?.id };
 }
 
