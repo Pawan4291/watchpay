@@ -17,6 +17,32 @@
  * - autoConnect from @unicitylabs/sphere-sdk/connect/browser
  * - SPHERE_NETWORKS from @unicitylabs/sphere-sdk/connect
  */
+import { Sphere } from '@unicitylabs/sphere-sdk';
+import {
+  createLocalStorageProvider,
+  createNostrTransportProvider,
+  createUnicityAggregatorProvider,
+} from '@unicitylabs/sphere-sdk/impl/browser';
+
+let sphereInstance: Awaited<ReturnType<typeof Sphere.init>>['sphere'] | null = null;
+
+export async function getSphere(mnemonic: string) {
+  if (sphereInstance) return sphereInstance;
+
+  const storage = createLocalStorageProvider();
+  const transport = createNostrTransportProvider();
+  const oracle = createUnicityAggregatorProvider({ url: '/rpc', network: 'testnet2' });
+
+  const { sphere } = await Sphere.init({
+    mnemonic,
+    network: 'testnet2',
+    storage,
+    transport,
+    oracle,
+  });
+  sphereInstance = sphere;
+  return sphere;
+}
 
 // NOTE: This file contains the architecture and contracts for the real SDK integration.
 // In a Next.js/Node.js server environment, these would be real imports.
@@ -29,6 +55,7 @@ import {
   TESTNET2_API_KEY,
   WALLET_API_BASE,
   NETWORK_NAME,
+  SPHERE_WALLET_URL,
 } from './constants';
 
 // ─────────────────────────────────────────────────────────────
@@ -42,9 +69,11 @@ export interface WalletCreateResult {
   chainPubkey: string;
 }
 
+import type { TransferStatus } from '@unicitylabs/sphere-sdk';
+
 export interface SendResult {
   id: string;           // transferId
-  status: 'completed' | 'pending' | 'submitted' | 'failed';
+  status: TransferStatus;
   deliveryPending: boolean;
   deliveryState: 'landed' | 'pending-delivery';
 }
@@ -161,15 +190,21 @@ export function formatUCT(amount: number, decimals = 6): string {
  * }
  */
 export async function createUserWallet(desiredNametag: string): Promise<WalletCreateResult> {
-  // Browser demo: return a realistic mock result
-  // In production: see REAL IMPLEMENTATION above
-  await new Promise(r => setTimeout(r, 1500));
-  const mockMnemonic = 'abandon ability able about above absent absorb abstract absurd abuse access accident';
-  return {
-    address: `DIRECT://02${Math.random().toString(16).slice(2, 68).padEnd(66, '0')}`,
+  const { generateMnemonic } = await import('@unicitylabs/sphere-sdk');
+  const mnemonic = generateMnemonic();
+  const { sphere } = await Sphere.init({
+    mnemonic,
+    network: 'testnet2',
+    storage: createLocalStorageProvider(),
+    transport: createNostrTransportProvider(),
+    oracle: createUnicityAggregatorProvider({ url: '/rpc', network: 'testnet2' }),
     nametag: desiredNametag,
-    mnemonic: mockMnemonic,
-    chainPubkey: `02${Math.random().toString(16).slice(2, 68).padEnd(66, '0')}`,
+  } as any);
+  return {
+    address: sphere.identity!.directAddress!,
+    nametag: sphere.identity!.nametag!,
+    mnemonic,
+    chainPubkey: sphere.identity!.chainPubkey,
   };
 }
 
@@ -212,19 +247,23 @@ export async function createUserWallet(desiredNametag: string): Promise<WalletCr
  * }
  */
 export async function sendUCT(
-  _fromMnemonic: string,
+  fromMnemonic: string,
   toNametag: string,
   amountSmallestUnit: string,
   memo?: string
 ): Promise<SendResult> {
-  await new Promise(r => setTimeout(r, 2000));
-  const txId = Array.from({ length: 48 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-  console.log(`[WatchPay] sendUCT → ${toNametag}, amount: ${amountSmallestUnit} smallest units, memo: ${memo}`);
+  const sphere = await getSphere(fromMnemonic);
+  const result = await sphere.payments.send({
+    recipient: toNametag,
+    amount: amountSmallestUnit,
+    coinId: UCT_COIN_ID,
+    memo,
+  });
   return {
-    id: txId,
-    status: 'completed',
-    deliveryPending: Math.random() > 0.7,
-    deliveryState: Math.random() > 0.7 ? 'pending-delivery' : 'landed',
+    id: result.id,
+    status: result.status,
+    deliveryPending: result.deliveryPending ?? false,
+    deliveryState: result.deliveryState ?? 'landed',
   };
 }
 
@@ -241,14 +280,11 @@ export async function sendUCT(
  *   return assets;
  * }
  */
-export async function getBalance(_mnemonic: string): Promise<BalanceAsset[]> {
-  await new Promise(r => setTimeout(r, 800));
-  return [{
-    coinId: UCT_COIN_ID,
-    symbol: 'UCT',
-    totalAmount: (Math.random() * 10 + 0.5).toFixed(8),
-    tokenCount: Math.floor(Math.random() * 5) + 1,
-  }];
+export async function getBalance(mnemonic: string): Promise<BalanceAsset[]> {
+  const sphere = await getSphere(mnemonic);
+  await sphere.payments.receive();
+  const assets = await sphere.payments.getAssets();
+  return assets;
 }
 
 /**
@@ -294,14 +330,19 @@ export async function getBalance(_mnemonic: string): Promise<BalanceAsset[]> {
  * });
  */
 export async function connectRealWallet(): Promise<{ identity: ConnectIdentity }> {
-  await new Promise(r => setTimeout(r, 1000));
-  return {
-    identity: {
-      chainPubkey: '02abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
-      directAddress: 'DIRECT://02abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
-      nametag: undefined, // user may or may not have a nametag
-    },
-  };
+  const { autoConnect } = await import('@unicitylabs/sphere-sdk/connect/browser');
+  const { SPHERE_NETWORKS } = await import('@unicitylabs/sphere-sdk/connect');
+
+  const result = await autoConnect({
+    dapp: { name: 'WatchPay', description: 'Pay-per-30-seconds video watching on Unicity Sphere', url: window.location.origin },
+   walletUrl: SPHERE_WALLET_URL,
+    network: SPHERE_NETWORKS.testnet2,
+    silent: true,
+    permissions: ['identity:read', 'balance:read', 'transfer:request', 'sign:request'],
+  } as any);
+
+  sessionStorage.setItem('sphere-session', result.connection.sessionId);
+  return { identity: result.connection.identity };
 }
 
 /**
@@ -323,9 +364,12 @@ export async function connectRealWallet(): Promise<{ identity: ConnectIdentity }
  *   throw new Error(result.error);
  * }
  */
-export async function mintTestUCT(_mnemonic: string, _amountUCT: number): Promise<string> {
-  await new Promise(r => setTimeout(r, 2500));
-  return Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+export async function mintTestUCT(mnemonic: string, amountUCT: number): Promise<string> {
+  const sphere = await getSphere(mnemonic);
+  const amount = BigInt(uctToSmallestUnit(amountUCT));
+  const result = await sphere.payments.mintFungibleToken(UCT_COIN_ID, amount);
+  if (result.success) return result.tokenId;
+  throw new Error(result.error);
 }
 
 export { UCT_COIN_ID, UCT_DECIMALS, NETWORK_NAME, TESTNET2_API_KEY, WALLET_API_BASE };

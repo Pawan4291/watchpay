@@ -206,19 +206,4 @@ export const DEMO_AGENT_LOGS = [
   },
 ];
 
-// Demo settlements
-export const DEMO_SETTLEMENTS = [
-  { id: 's1', creator_id: 'c1', amount: 0.0432, tx_id: 'a3f8c2d1e9b45602f7a8c3d2e1f95b47a8c3d2e1f9b4560', memo: 'Watch payment settlement — 0.04320000 UCT', timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString() },
-  { id: 's2', creator_id: 'c1', amount: 0.0360, tx_id: 'f8c3d4e5b2a79013d9c5f7e8b4a3c5d8e7f4b3a5091', memo: 'Watch payment settlement — 0.03600000 UCT', timestamp: new Date(Date.now() - 7 * 60 * 1000).toISOString() },
-  { id: 's3', creator_id: 'c1', amount: 0.0288, tx_id: 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2', memo: 'Watch payment settlement — 0.02880000 UCT', timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString() },
-];
 
-// Demo stats
-export const DEMO_STATS = {
-  totalSettled: '1,247.832 UCT',
-  activeSessions: 47,
-  totalCreators: 6,
-  agentUptime: '99.7%',
-  avgSettlementTime: '4m 52s',
-  txsLast24h: 2847,
-};

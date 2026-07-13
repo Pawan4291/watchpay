@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Zap, Shield, TrendingUp, Clock, RefreshCw, Terminal, Cpu } from 'lucide-react';
 import { AgentLogItem, type AgentLog } from '../components/AgentLogItem';
-import { DEMO_AGENT_LOGS, DEMO_STATS } from '../lib/constants';
+// fetch real logs/stats from Supabase agent_log table instead
 
 function StatCard({ label, value, icon: Icon, color = '#ff6b00' }: { label: string; value: string; icon: React.ElementType; color?: string }) {
   return (
@@ -36,7 +36,11 @@ const TERMINAL_LINES = [
 ];
 
 export function AgentActivityPage() {
-  const [logs, setLogs] = useState<AgentLog[]>(DEMO_AGENT_LOGS as AgentLog[]);
+  const [logs, setLogs] = useState<AgentLog[]>([]);
+
+  useEffect(() => {
+    fetch('/api/agent/logs').then(r => r.json()).then(setLogs).catch(() => {});
+  }, []);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'settlement' | 'balance_check'>('all');
   const [showTerminal, setShowTerminal] = useState(false);
@@ -55,39 +59,6 @@ export function AgentActivityPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Simulate new log entries
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const isSett = Math.random() > 0.5;
-      const newLog: AgentLog = isSett ? {
-        id: `log_${Date.now()}`,
-        action_type: 'settlement',
-        details: {
-          creator_nametag: `@creator_${Math.floor(Math.random() * 10)}`,
-          amount: (Math.random() * 0.05 + 0.001).toFixed(8),
-          tx_id: Array.from({ length: 48 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
-          creator_id: `c${Math.floor(Math.random() * 6) + 1}`,
-          viewers_count: Math.floor(Math.random() * 20) + 1,
-          memo: `Watch payment settlement — ${(Math.random() * 0.05).toFixed(8)} UCT`,
-        },
-        timestamp: new Date().toISOString(),
-      } : {
-        id: `log_${Date.now()}`,
-        action_type: 'balance_check',
-        details: {
-          active_sessions: Math.floor(Math.random() * 60) + 10,
-          wallets_checked: Math.floor(Math.random() * 60) + 10,
-          low_balance_alerts: Math.floor(Math.random() * 5),
-          alert_recipients: [],
-        },
-        timestamp: new Date().toISOString(),
-      };
-
-      setLogs(prev => [newLog, ...prev.slice(0, 49)]);
-    }, 15000); // new log every 15s for demo
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Terminal animation
   useEffect(() => {
@@ -182,13 +153,13 @@ export function AgentActivityPage() {
       </motion.div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-        <StatCard label="Total Settled" value={DEMO_STATS.totalSettled} icon={TrendingUp} />
-        <StatCard label="Active Sessions" value={String(DEMO_STATS.activeSessions)} icon={Activity} />
-        <StatCard label="Creators Paying" value={String(DEMO_STATS.totalCreators)} icon={Zap} />
-        <StatCard label="Agent Uptime" value={DEMO_STATS.agentUptime} icon={Shield} color="#00ff88" />
-        <StatCard label="Avg Settle Time" value={DEMO_STATS.avgSettlementTime} icon={Clock} color="#888" />
-        <StatCard label="TXs Last 24h" value={String(DEMO_STATS.txsLast24h)} icon={Activity} />
+     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <StatCard label="Total Settled" value={`${logs.filter(l => l.action_type === 'settlement').reduce((s, l) => s + Number(l.details?.amount ?? 0), 0).toFixed(4)} UCT`} icon={TrendingUp} />
+        <StatCard label="Active Sessions" value={String(checkCount)} icon={Activity} />
+        <StatCard label="Creators Paying" value={String(new Set(logs.map(l => l.details?.creator_nametag)).size)} icon={Zap} />
+        <StatCard label="Agent Uptime" value="—" icon={Shield} color="#00ff88" />
+        <StatCard label="Avg Settle Time" value="—" icon={Clock} color="#888" />
+        <StatCard label="TXs Last 24h" value={String(settlementCount)} icon={Activity} />
       </div>
 
       {/* Next agent run countdown */}

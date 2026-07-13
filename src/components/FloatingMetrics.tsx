@@ -9,26 +9,22 @@ interface Notification {
   amount?: string;
 }
 
-const TICK_MESSAGES = [
-  { type: 'tick' as const, text: '@viewer_3 → @satoshi_dev', amount: '0.001000 UCT' },
-  { type: 'tick' as const, text: '@viewer_7 → @alice_builder', amount: '0.002000 UCT' },
-  { type: 'settlement' as const, text: 'Agent settled @bob_crypto', amount: '0.018000 UCT' },
-  { type: 'tick' as const, text: '@viewer_12 → @satoshi_dev', amount: '0.001000 UCT' },
-  { type: 'session' as const, text: '@viewer_21 started watching', amount: undefined },
-  { type: 'tick' as const, text: '@viewer_5 → @carol_defi', amount: '0.003000 UCT' },
-  { type: 'settlement' as const, text: 'Agent settled @eva_blockchain', amount: '0.04500 UCT' },
-  { type: 'tick' as const, text: '@viewer_9 → @dave_engineer', amount: '0.001000 UCT' },
-];
+
 
 export function FloatingNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const template = TICK_MESSAGES[Math.floor(Math.random() * TICK_MESSAGES.length)];
+    const interval = setInterval(async () => {
+      // fetch latest row from your real agent_log table (Supabase)
+      const res = await fetch('/api/agent/latest-log');
+      const log = await res.json();
+      if (!log) return;
       const notif: Notification = {
         id: Date.now(),
-        ...template,
+        type: log.action_type === 'settlement' ? 'settlement' : 'tick',
+        text: log.details.creator_nametag ? `Agent settled ${log.details.creator_nametag}` : log.details.text,
+        amount: log.details.amount ? `${log.details.amount} UCT` : undefined,
       };
       setNotifications(prev => [...prev.slice(-3), notif]);
     }, 4000);

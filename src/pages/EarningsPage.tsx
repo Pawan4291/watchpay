@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { DollarSign, TrendingUp, ExternalLink, Award, Clock, Zap, Download } from 'lucide-react';
 import { useStore } from '../lib/store';
-import { DEMO_SETTLEMENTS } from '../lib/constants';
 
 function formatUCT(n: number) {
   return n.toFixed(8).replace(/\.?0+$/, '');
@@ -35,7 +34,16 @@ export function EarningsPage() {
     );
   }
 
-  const settlements = DEMO_SETTLEMENTS;
+  const [settlements, setSettlements] = useState<Array<{ id: string; amount: number; tx_id: string; memo: string; timestamp: string }>>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetch(`/api/settlements?creator_id=${user.id}`)
+      .then(r => r.json())
+      .then(setSettlements)
+      .catch(() => {});
+  }, [user]);
+
   const totalEarned = settlements.reduce((sum, s) => sum + s.amount, 0);
   const avgSettlement = settlements.length > 0 ? totalEarned / settlements.length : 0;
 

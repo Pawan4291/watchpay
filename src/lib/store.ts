@@ -1,5 +1,6 @@
 // Simple reactive store for demo state
 import { useState, useEffect } from 'react';
+import { sendUCT } from './sphere';
 
 export interface User {
   id: string;
@@ -12,6 +13,8 @@ export interface User {
 export interface AppWallet {
   address: string;
   nametag: string;
+  mnemonic: string;
+  realNametag: string;
   balance: number; // UCT balance
   lastUpdated: string;
 }
@@ -67,27 +70,34 @@ export function useStore() {
   return storeState;
 }
 
-// Demo login flow
 export async function loginWithSphere(): Promise<void> {
   setStore({ isConnecting: true });
-  await new Promise(r => setTimeout(r, 1800));
 
-  const demoUser: User = {
-    id: 'demo-user-001',
-    nametag: 'watchpay_demo',
-    realNametag: '@demo_sphere_user',
-    directAddress: 'DIRECT://02a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',
-    isCreator: true,
+  const { connectRealWallet, createUserWallet, getBalance } = await import('./sphere');
+  const { identity } = await connectRealWallet();
+
+  const wallet = await createUserWallet(identity.nametag ?? `user_${Date.now()}`);
+  const balances = await getBalance(wallet.mnemonic);
+  const uctBalance = balances.find(b => b.symbol === 'UCT');
+
+  const realUser: User = {
+    id: identity.chainPubkey,
+    nametag: wallet.nametag,
+    realNametag: identity.nametag,
+    directAddress: identity.directAddress,
+    isCreator: false,
   };
 
-  const demoWallet: AppWallet = {
-    address: 'DIRECT://02b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3',
-    nametag: 'watchpay_demo',
-    balance: 2.45000000,
+  const appWallet: AppWallet = {
+    address: wallet.address,
+    nametag: wallet.nametag,
+    mnemonic: wallet.mnemonic,
+    realNametag: identity.nametag ?? '',
+    balance: uctBalance ? Number(uctBalance.totalAmount) : 0,
     lastUpdated: new Date().toISOString(),
   };
 
-  setStore({ user: demoUser, wallet: demoWallet, isConnecting: false });
+  setStore({ user: realUser, wallet: appWallet, isConnecting: false });
 }
 
 export async function disconnectWallet(): Promise<void> {
@@ -152,8 +162,8 @@ export function endWatchSession(): void {
 
 export async function depositUCT(amount: number): Promise<{ success: boolean; txId?: string }> {
   if (!storeState.wallet) return { success: false };
-  await new Promise(r => setTimeout(r, 2500));
-  const txId = Array.from({ length: 48 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  const result = await sendUCT(storeState.wallet.mnemonic, storeState.wallet.nametag, String(amount), 'Deposit');
+  const txId = result.id;
   const newBalance = storeState.wallet.balance + amount;
   setStore({
     wallet: {
@@ -169,8 +179,8 @@ export async function withdrawUCT(amount: number): Promise<{ success: boolean; t
   if (!storeState.wallet || storeState.wallet.balance < amount) {
     return { success: false };
   }
-  await new Promise(r => setTimeout(r, 2500));
-  const txId = Array.from({ length: 48 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  const result = await sendUCT(storeState.wallet.mnemonic, storeState.wallet.realNametag, String(amount), 'Withdraw');
+  const txId = result.id;
   const newBalance = storeState.wallet.balance - amount;
   setStore({
     wallet: {

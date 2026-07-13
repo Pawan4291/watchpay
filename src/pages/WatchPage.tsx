@@ -164,6 +164,10 @@ function VideoCard({ video, onPlay }: { video: Video; onPlay: () => void }) {
 }
 
 export function WatchPage() {
+  const [totalSettledFromDB, setTotalSettledFromDB] = useState('0 UCT');
+  useEffect(() => {
+    fetch('/api/settlements/total').then(r => r.json()).then(d => setTotalSettledFromDB(`${d.total} UCT`));
+  }, []);
   const { user } = useStore();
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [search, setSearch] = useState('');
@@ -233,7 +237,7 @@ export function WatchPage() {
         className="grid grid-cols-3 gap-4 mb-8"
       >
         {[
-          { label: 'Total Settled', value: '1,247 UCT', icon: TrendingUp },
+          { label: 'Total Settled', value: totalSettledFromDB, icon: TrendingUp },
           { label: 'Active Sessions', value: String(liveCount), icon: Play },
           { label: 'Creators Earning', value: '6', icon: Star },
         ].map((stat, i) => (
