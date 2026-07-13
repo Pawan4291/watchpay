@@ -10,6 +10,7 @@ export default async function handler(req: any, res: any) {
     const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     const { sphere } = await Sphere.init({
       ...createNodeProviders({ network: 'testnet2' }),
+      network: 'testnet2',
       mnemonic: process.env.AGENT_WALLET_MNEMONIC!,
     } as any);
 
