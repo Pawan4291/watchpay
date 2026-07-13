@@ -113,7 +113,7 @@ export function Nav({ activeTab, onTabChange, isLoggedIn }: NavProps) {
               }}
             >
               <Wallet size={13} />
-              {isConnecting ? 'Connecting...' : isLoggedIn ? `@${user?.nametag}` : 'Connect Wallet'}
+              {isConnecting ? 'Connecting...' : isLoggedIn ? (user?.nametag ? `@${user.nametag}` : `${user?.directAddress?.slice(0, 10)}...`) : 'Connect Wallet'}
             </motion.button>
           </div>
         </div>

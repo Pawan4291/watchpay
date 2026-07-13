@@ -31,7 +31,7 @@ export async function getSphere(mnemonic: string) {
 
   const storage = createLocalStorageProvider();
   const transport = createNostrTransportProvider({ relays: [NOSTR_RELAY] });
-  const oracle = createUnicityAggregatorProvider({ url: '/rpc', network: 'testnet2' });
+ const oracle = createUnicityAggregatorProvider({ url: '/rpc', network: 'testnet2', apiKey: TESTNET2_API_KEY });
 
   const { sphere } = await Sphere.init({
     mnemonic,
