@@ -1,6 +1,6 @@
 // Unicity Sphere Testnet2 Constants
 export const UCT_COIN_ID = 'f581d30f593e4b369d684a4563b5246f07b1d265f7178a2c0a82b81f39c24dc0';
-export const UCT_DECIMALS = 8; // From TokenRegistry docs
+export const UCT_DECIMALS = 18; // Confirmed from real on-chain tx history: 1 UCT = 1000000000000000000
 export const UCT_SYMBOL = 'UCT';
 
 // Testnet2 endpoints
@@ -16,8 +16,8 @@ export const TICK_INTERVAL_MS = 30000; // 30 seconds
 export const AGENT_SETTLE_INTERVAL_MS = 300000; // 5 min
 export const AGENT_CHECK_INTERVAL_MS = 300000; // 5 min
 
-// Smallest unit conversion (UCT has 8 decimals)
-export const UCT_TO_SMALLEST = 100_000_000; // 1 UCT = 100,000,000 smallest units
+// Smallest unit conversion (UCT has 18 decimals)
+export const UCT_TO_SMALLEST = 1_000_000_000_000_000_000; // 1 UCT = 1e18 smallest units
 
 export const NETWORK_NAME = 'testnet2';
 export const NETWORK_ID = 4; // testnet2 network id from trust base

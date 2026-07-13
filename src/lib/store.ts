@@ -181,6 +181,11 @@ export function endWatchSession(): void {
 
 export async function depositUCT(amount: number): Promise<{ success: boolean; txId?: string }> {
   if (!storeState.wallet) return { success: false };
+  const recipientTarget = storeState.wallet.nametag || storeState.wallet.address;
+  if (!recipientTarget) {
+    console.error('[WatchPay] depositUCT: no nametag or address on wallet', storeState.wallet);
+    return { success: false };
+  }
   let client = storeState.sphereClient;
   if (!client) {
     const { connectRealWallet } = await import('./sphere');
@@ -189,7 +194,7 @@ export async function depositUCT(amount: number): Promise<{ success: boolean; tx
     setStore({ sphereClient: client });
   }
   const { requestDeposit, uctToSmallestUnit } = await import('./sphere');
-  const result = await requestDeposit(client, storeState.wallet.nametag, uctToSmallestUnit(amount));
+ const result = await requestDeposit(client, recipientTarget, uctToSmallestUnit(amount));
   const txId = result.txId ?? '';
   const newBalance = storeState.wallet.balance + amount;
   setStore({
