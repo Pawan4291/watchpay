@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Tv, Upload, User, DollarSign, Activity, Zap } from 'lucide-react';
+import { Tv, Upload, User, DollarSign, Activity, Zap, Wallet } from 'lucide-react';
+import { useStore, loginWithSphere, disconnectWallet } from '../lib/store';
 
 type Tab = 'watch' | 'upload' | 'profile' | 'earnings' | 'agent-activity';
 
@@ -18,6 +19,8 @@ const tabs = [
 ];
 
 export function Nav({ activeTab, onTabChange, isLoggedIn }: NavProps) {
+  const { user, isConnecting } = useStore();
+
   return (
     <motion.nav
       initial={{ y: -80, opacity: 0 }}
@@ -86,7 +89,7 @@ export function Nav({ activeTab, onTabChange, isLoggedIn }: NavProps) {
                 <motion.button
                   key={tab.id}
                   onClick={() => canAccess && onTabChange(tab.id)}
-                  className={`nav-tab flex items-center gap-1.5 ${isActive ? 'active' : ''} ${!canAccess ? 'opacity-30 cursor-not-allowed' : ''}`}
+                  className={`nav-tab flex items-center gap-1.5 ${isActive ? 'active' : ''} ${!canAccess ? 'opacity-60 cursor-not-allowed' : ''}`}
                   whileHover={canAccess ? { scale: 1.05 } : {}}
                   whileTap={canAccess ? { scale: 0.95 } : {}}
                 >
@@ -95,6 +98,23 @@ export function Nav({ activeTab, onTabChange, isLoggedIn }: NavProps) {
                 </motion.button>
               );
             })}
+
+            <motion.button
+              onClick={() => (isLoggedIn ? disconnectWallet() : loginWithSphere())}
+              disabled={isConnecting}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-orbitron text-xs ml-2"
+              style={{
+                background: isLoggedIn ? 'rgba(0,255,136,0.1)' : 'rgba(255,107,0,0.15)',
+                border: `1px solid ${isLoggedIn ? 'rgba(0,255,136,0.3)' : 'rgba(255,107,0,0.4)'}`,
+                color: isLoggedIn ? '#00ff88' : '#ff6b00',
+                cursor: 'pointer',
+              }}
+            >
+              <Wallet size={13} />
+              {isConnecting ? 'Connecting...' : isLoggedIn ? `@${user?.nametag}` : 'Connect Wallet'}
+            </motion.button>
           </div>
         </div>
       </div>
