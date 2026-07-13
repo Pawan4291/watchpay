@@ -30,7 +30,7 @@ export async function getSphere(mnemonic: string) {
   if (sphereInstance) return sphereInstance;
 
   const storage = createLocalStorageProvider();
-  const transport = createNostrTransportProvider();
+  const transport = createNostrTransportProvider({ relays: [NOSTR_RELAY] });
   const oracle = createUnicityAggregatorProvider({ url: '/rpc', network: 'testnet2' });
 
   const { sphere } = await Sphere.init({
@@ -56,6 +56,7 @@ import {
   WALLET_API_BASE,
   NETWORK_NAME,
   SPHERE_WALLET_URL,
+  NOSTR_RELAY,
 } from './constants';
 
 // ─────────────────────────────────────────────────────────────
@@ -196,7 +197,7 @@ export async function createUserWallet(desiredNametag: string): Promise<WalletCr
     mnemonic,
     network: 'testnet2',
     storage: createLocalStorageProvider(),
-    transport: createNostrTransportProvider(),
+    transport: createNostrTransportProvider({ relays: [NOSTR_RELAY] }),
     oracle: createUnicityAggregatorProvider({ url: '/rpc', network: 'testnet2' }),
     nametag: desiredNametag,
   } as any);
