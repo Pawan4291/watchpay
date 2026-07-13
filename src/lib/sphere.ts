@@ -201,9 +201,12 @@ export async function createUserWallet(desiredNametag: string): Promise<WalletCr
     oracle: createUnicityAggregatorProvider({ url: '/rpc', network: 'testnet2' }),
     nametag: desiredNametag,
   } as any);
+  if (!sphere.identity?.nametag) {
+    console.error('[WatchPay] createUserWallet: nametag registration failed for', desiredNametag, '- falling back to address-only wallet');
+  }
   return {
     address: sphere.identity!.directAddress!,
-    nametag: sphere.identity!.nametag!,
+    nametag: sphere.identity?.nametag ?? '',
     mnemonic,
     chainPubkey: sphere.identity!.chainPubkey,
   };

@@ -105,7 +105,8 @@ async function finishLogin(identity: { chainPubkey: string; nametag?: string; di
       chainPubkey: identity.chainPubkey,
     };
   } else {
-    wallet = await createUserWallet(identity.nametag ?? `user_${Date.now()}`);
+    const desiredNametag = `wp_${(identity.nametag ?? 'user').replace(/^@/, '')}_${identity.chainPubkey.slice(0, 6)}`;
+    wallet = await createUserWallet(desiredNametag);
     await fetch('/api/wallet-save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -141,11 +142,13 @@ export async function disconnectWallet(): Promise<void> {
 
 export async function refreshBalance(): Promise<void> {
   if (!storeState.wallet) return;
-  await new Promise(r => setTimeout(r, 600));
+  const { getBalance } = await import('./sphere');
+  const balances = await getBalance(storeState.wallet.mnemonic);
+  const uctBalance = balances.find(b => b.symbol === 'UCT');
   setStore({
     wallet: {
       ...storeState.wallet,
-      balance: storeState.wallet.balance + (Math.random() * 0.001 - 0.0005),
+      balance: uctBalance ? Number(uctBalance.totalAmount) / 1e18 : storeState.wallet.balance,
       lastUpdated: new Date().toISOString(),
     },
   });
