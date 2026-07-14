@@ -17,6 +17,7 @@ export default async function handler(req: any, res: any) {
    await sphere.payments.receive();
 console.log('[WatchPay] agent wallet identity:', sphere.identity?.nametag, sphere.identity?.directAddress);
 const history = await sphere.payments.getHistory();
+console.log('[WatchPay] agent wallet identity:', sphere.identity?.nametag, sphere.identity?.directAddress);
 
     // TEMP DEBUG — log raw shape so we can see real field names
     console.log('[WatchPay] raw history sample:', JSON.stringify(history?.slice?.(0, 3) ?? history, null, 2));
