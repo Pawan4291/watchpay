@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Sphere } from '@unicitylabs/sphere-sdk';
-import { createNodeProviders } from '@unicitylabs/sphere-sdk/impl/nodejs';
+import { createNodeProviders, createWalletApiProviders } from '@unicitylabs/sphere-sdk/impl/nodejs';
 
 export default async function handler(req: any, res: any) {
   const { chainPubkey, senderNametag } = req.query;
@@ -8,8 +8,14 @@ export default async function handler(req: any, res: any) {
 
   try {
     const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-    const { sphere } = await Sphere.init({
-  ...createNodeProviders({ network: 'testnet2', dataDir: '/tmp/sphere-data', tokensDir: '/tmp/tokens-data', oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' } }),
+    const base = createNodeProviders({ network: 'testnet2', oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' } });
+const providers = createWalletApiProviders(base, {
+  baseUrl: 'https://wallet-api.unicity.network',
+  network: 'testnet2',
+  deviceId: 'watchpay-agent',
+});
+const { sphere } = await Sphere.init({
+  ...providers,
   network: 'testnet2',
   mnemonic: process.env.AGENT_WALLET_MNEMONIC!,
 } as any);
