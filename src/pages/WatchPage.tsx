@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Eye, Clock, Zap, Star, TrendingUp, Search, Filter } from 'lucide-react';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { useStore } from '../lib/store';
-import { DEMO_VIDEOS } from '../lib/constants';
+// DEMO_VIDEOS removed — using real Supabase data now
 
 export type { Video } from '../lib/types';
 import type { Video } from '../lib/types';
@@ -165,24 +165,26 @@ function VideoCard({ video, onPlay }: { video: Video; onPlay: () => void }) {
 
 export function WatchPage() {
   const [totalSettledFromDB, setTotalSettledFromDB] = useState('0 UCT');
+  const [activeSessions, setActiveSessions] = useState(0);
+  const [creatorsEarning, setCreatorsEarning] = useState(0);
+  const [videos, setVideos] = useState<Video[]>([]);
+
   useEffect(() => {
-    fetch('/api/settlements/total').then(r => r.json()).then(d => setTotalSettledFromDB(`${d.total} UCT`));
+    fetch('/api/settlements/total').then(r => r.json()).then(d => setTotalSettledFromDB(`${d.total ?? 0} UCT`)).catch(() => {});
+    fetch('/api/watch-stats').then(r => r.json()).then(d => {
+      setActiveSessions(d.activeSessions ?? 0);
+      setCreatorsEarning(d.creatorsEarning ?? 0);
+    }).catch(() => {});
+    fetch('/api/videos-list').then(r => r.json()).then(d => setVideos(d.videos ?? [])).catch(() => {});
   }, []);
+
   const { user } = useStore();
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [sortBy, setSortBy] = useState<'popular' | 'newest' | 'cheapest'>('popular');
-  const [liveCount, setLiveCount] = useState(47);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveCount(n => n + (Math.random() > 0.5 ? 1 : -1));
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const filtered = DEMO_VIDEOS.filter(v => {
+  const filtered = videos.filter(v => {
     const matchSearch = v.title.toLowerCase().includes(search.toLowerCase()) ||
       v.creator.toLowerCase().includes(search.toLowerCase());
     const matchCat = category === 'All' || v.category === category;
@@ -211,7 +213,7 @@ export function WatchPage() {
               transition={{ duration: 1.5, repeat: Infinity }}
             />
             <span className="font-orbitron text-xs" style={{ color: '#ff6b00', letterSpacing: '0.1em' }}>
-              {liveCount} WATCHING NOW
+              {activeSessions} WATCHING NOW
             </span>
           </div>
           <div className="text-xs" style={{ color: '#444' }}>
@@ -238,8 +240,8 @@ export function WatchPage() {
       >
         {[
           { label: 'Total Settled', value: totalSettledFromDB, icon: TrendingUp },
-          { label: 'Active Sessions', value: String(liveCount), icon: Play },
-          { label: 'Creators Earning', value: '6', icon: Star },
+          { label: 'Active Sessions', value: String(activeSessions), icon: Play },
+          { label: 'Creators Earning', value: String(creatorsEarning), icon: Star },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
