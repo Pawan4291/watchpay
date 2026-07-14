@@ -11,7 +11,7 @@ export interface User {
 }
 
 export interface WPWallet {
-  balance: number; // WP points (1:1 with UCT)
+  balance: number;
   lastUpdated: string;
 }
 
@@ -119,6 +119,13 @@ export function startWatchSession(videoId: string): WatchSession {
     active: true,
   };
   setStore({ currentSession: session });
+
+  fetch('/api/session-start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chainPubkey: storeState.user?.id, videoId }),
+  }).catch(err => console.error('[WatchPay] session-start failed:', err));
+
   return session;
 }
 
@@ -139,7 +146,6 @@ export function recordTick(rate: number): boolean {
     currentSession: newSession,
   });
 
-  // fire-and-forget: persist the deduction server-side
   fetch('/api/points-tick', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -151,7 +157,14 @@ export function recordTick(rate: number): boolean {
 
 export function endWatchSession(): void {
   if (!storeState.currentSession) return;
-  setStore({ currentSession: { ...storeState.currentSession, active: false } });
+  const session = storeState.currentSession;
+  setStore({ currentSession: { ...session, active: false } });
+
+  fetch('/api/session-end', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chainPubkey: storeState.user?.id, videoId: session.videoId }),
+  }).catch(err => console.error('[WatchPay] session-end failed:', err));
 }
 
 export async function depositUCT(amount: number): Promise<{ success: boolean; txId?: string }> {
@@ -168,7 +181,6 @@ export async function depositUCT(amount: number): Promise<{ success: boolean; tx
     const result = await requestDeposit(client, WATCHPAY_AGENT_NAMETAG, uctToSmallestUnit(amount));
     console.log('[WatchPay] deposit intent result:', result);
 
-    // Poll to confirm + credit points (agent-side detection)
     const check = await fetch(`/api/points-deposit-check?chainPubkey=${encodeURIComponent(storeState.user.id)}&senderNametag=${encodeURIComponent(storeState.user.realNametag ?? '')}`).then(r => r.json());
     console.log('[WatchPay] deposit-check response:', check);
 

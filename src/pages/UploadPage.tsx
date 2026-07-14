@@ -66,14 +66,31 @@ export function UploadPage() {
     setLoading(true);
     setError('');
 
-    // Simulate API call to /api/video/upload
-    await new Promise(r => setTimeout(r, 1800));
+    try {
+      const res = await fetch('/api/video-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chainPubkey: user.id,
+          nametag: user.nametag,
+          title: form.title,
+          url: form.url,
+          rate_per_30s: rate,
+        }),
+      }).then(r => r.json());
 
-    // In production: POST /api/video/upload with { title, url, rate_per_30s, creator_id, coin_id }
-    // Inserts into `videos` table with UCT coin_id
+      if (res.error) {
+        setError(res.error);
+        setLoading(false);
+        return;
+      }
 
-    setLoading(false);
-    setSuccess(true);
+      setLoading(false);
+      setSuccess(true);
+    } catch (err) {
+      setError('Upload failed — please try again.');
+      setLoading(false);
+    }
   };
 
   const handleChange = (field: keyof VideoForm, value: string) => {

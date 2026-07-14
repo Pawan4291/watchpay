@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Volume2, VolumeX, Zap, AlertTriangle, CheckCircle, X, Clock, Coins } from 'lucide-react';
 import { useStore, startWatchSession, recordTick, endWatchSession } from '../lib/store';
+import { TICK_INTERVAL_MS } from '../lib/constants';
 import type { Video } from '../lib/types';
 
 interface VideoPlayerProps {
@@ -55,11 +56,11 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
         });
       }, 1000);
 
-      // Tick every 30 seconds
+      // Tick every TICK_INTERVAL_MS
       tickIntervalRef.current = setInterval(() => {
         handleTick();
         setElapsed(0);
-      }, 30000);
+      }, TICK_INTERVAL_MS);
 
       // Waveform animation
       waveRef.current = setInterval(() => {
@@ -107,7 +108,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
     onClose();
   };
 
-  const progress = (elapsed / 30) * 100;
+  const progress = (elapsed / (TICK_INTERVAL_MS / 1000)) * 100;
 
   return (
     <motion.div
@@ -253,7 +254,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
             {isPlaying && (
               <div className="mb-3">
                 <div className="flex items-center justify-between text-xs font-orbitron mb-1" style={{ color: '#ff6b0066', letterSpacing: '0.08em' }}>
-                  <span>NEXT TICK IN {30 - elapsed}s</span>
+                  <span>NEXT TICK IN {(TICK_INTERVAL_MS / 1000) - elapsed}s</span>
                   <span>{progress.toFixed(0)}%</span>
                 </div>
                 <div className="w-full rounded-full overflow-hidden" style={{ height: '3px', background: '#1a1a1a' }}>
