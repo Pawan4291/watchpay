@@ -8,24 +8,22 @@ export default async function handler(req: any, res: any) {
 
   try {
     const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-    const base = createNodeProviders({ network: 'testnet2', oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' } });
-const providers = createWalletApiProviders(base, {
-  baseUrl: 'https://wallet-api.unicity.network',
-  network: 'testnet2',
-  deviceId: 'watchpay-agent',
-});
-const { sphere } = await Sphere.init({
-  ...providers,
-  network: 'testnet2',
-  mnemonic: process.env.AGENT_WALLET_MNEMONIC!,
-} as any);
+    const base = createNodeProviders({ network: 'testnet2', dataDir: '/tmp/sphere-data', tokensDir: '/tmp/tokens-data', oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' } });
+    const providers = createWalletApiProviders(base, {
+      baseUrl: 'https://wallet-api.unicity.network',
+      network: 'testnet2',
+      deviceId: 'watchpay-agent',
+    });
+    const { sphere } = await Sphere.init({
+      ...providers,
+      network: 'testnet2',
+      mnemonic: process.env.AGENT_WALLET_MNEMONIC!,
+    } as any);
 
-   await sphere.payments.receive();
-console.log('[WatchPay] agent wallet identity:', sphere.identity?.nametag, sphere.identity?.directAddress);
-const history = await sphere.payments.getHistory();
-console.log('[WatchPay] agent wallet identity:', sphere.identity?.nametag, sphere.identity?.directAddress);
+    await sphere.payments.receive();
+    console.log('[WatchPay] agent wallet identity:', sphere.identity?.nametag, sphere.identity?.directAddress);
+    const history = await sphere.payments.getHistory();
 
-    // TEMP DEBUG — log raw shape so we can see real field names
     console.log('[WatchPay] raw history sample:', JSON.stringify(history?.slice?.(0, 3) ?? history, null, 2));
 
     const incoming = history.filter((h: any) => h.type === 'RECEIVED' && h.senderNametag === senderNametag);

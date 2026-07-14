@@ -12,7 +12,7 @@ export default async function handler(req: any, res: any) {
     const { data: existing } = await supabase.from('wp_points').select('balance').eq('chain_pubkey', chainPubkey).maybeSingle();
     if (!existing || existing.balance < amount) return res.status(400).json({ error: 'insufficient balance' });
 
-    const base = createNodeProviders({ network: 'testnet2', oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' } });
+    const base = createNodeProviders({ network: 'testnet2', dataDir: '/tmp/sphere-data', tokensDir: '/tmp/tokens-data', oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' } });
     const providers = createWalletApiProviders(base, {
       baseUrl: 'https://wallet-api.unicity.network',
       network: 'testnet2',
