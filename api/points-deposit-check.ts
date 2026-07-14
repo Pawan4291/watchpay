@@ -15,6 +15,7 @@ export default async function handler(req: any, res: any) {
 } as any);
 
    await sphere.payments.receive();
+console.log('[WatchPay] agent wallet identity:', sphere.identity?.nametag, sphere.identity?.directAddress);
 const history = await sphere.payments.getHistory();
 
     // TEMP DEBUG — log raw shape so we can see real field names
