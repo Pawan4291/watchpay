@@ -86,7 +86,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
     }
     if (!wallet || wallet.balance < video.rate_per_30s) {
       setInsufficientBalance(true);
-      setTickMessage({ type: 'error', text: 'Insufficient UCT balance — deposit to watch' });
+      setTickMessage({ type: 'error', text: 'Insufficient WP balance — buy WP in Profile to watch' });
       return;
     }
 
@@ -125,8 +125,8 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
         transition={{ type: 'spring', damping: 25 }}
         className="w-full max-w-4xl"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+       {/* Header */}
+        <div className="flex items-center justify-between mb-4 sticky top-0 z-10" style={{ background: 'rgba(0,0,0,0.95)', paddingTop: '4px' }}>
           <div>
             <h2 className="font-orbitron font-bold text-white text-lg">{video.title}</h2>
             <div className="flex items-center gap-3 mt-1">
@@ -369,8 +369,8 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
               </span>
             </div>
             <p className="text-xs" style={{ color: '#888' }}>
-              Your app wallet needs at least <strong style={{ color: '#ff6b00' }}>{video.rate_per_30s} UCT</strong> to watch this video.
-              Go to <strong>Profile → Deposit</strong> to top up with UCT from your real Sphere wallet.
+              You need at least <strong style={{ color: '#ff6b00' }}>{video.rate_per_30s} WP</strong> to watch this video.
+              Go to <strong>Profile → Buy WP</strong> to convert real UCT into WP.
             </p>
           </motion.div>
         )}

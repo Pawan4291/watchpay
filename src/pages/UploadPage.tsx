@@ -274,7 +274,7 @@ export function UploadPage() {
           <div>
             <label className="flex items-center gap-2 text-xs font-orbitron mb-2" style={{ color: '#888', letterSpacing: '0.1em' }}>
               <DollarSign size={12} />
-              RATE PER 30 SECONDS (UCT) *
+              RATE PER 30 SECONDS (WP, 1 WP = 1 UCT) *
             </label>
             <div className="flex gap-3">
               <input
