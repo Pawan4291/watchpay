@@ -16,8 +16,15 @@ function MyVideosSection({ user }: { user: { id: string } }) {
       .finally(() => setLoading(false));
   }, [user.id]);
 
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
   const handleDelete = async (videoId: string) => {
-    if (!confirm('Delete this video?')) return;
+    if (confirmingId !== videoId) {
+      setConfirmingId(videoId);
+      setTimeout(() => setConfirmingId(prev => (prev === videoId ? null : prev)), 3000);
+      return;
+    }
+    setConfirmingId(null);
     await fetch('/api/video-delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -50,9 +57,9 @@ function MyVideosSection({ user }: { user: { id: string } }) {
             <button
               onClick={() => handleDelete(v.id)}
               className="px-3 py-1.5 rounded text-xs font-orbitron"
-              style={{ background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.3)', color: '#ff4444', cursor: 'pointer' }}
+              style={{ background: confirmingId === v.id ? 'rgba(255,68,68,0.3)' : 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.3)', color: '#ff4444', cursor: 'pointer' }}
             >
-              DELETE
+              {confirmingId === v.id ? 'CONFIRM?' : 'DELETE'}
             </button>
           </div>
         ))}
