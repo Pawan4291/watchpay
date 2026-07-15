@@ -14,16 +14,16 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
   const { wallet, currentSession, user } = useStore();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [elapsed, setElapsed] = useState(0); // seconds since last tick
-  const [totalWatched, setTotalWatched] = useState(0); // seconds total
+  const [elapsed, setElapsed] = useState(0);
+  const [totalWatched, setTotalWatched] = useState(0);
   const [tickMessage, setTickMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [tickCount, setTickCount] = useState(0);
   const [insufficientBalance, setInsufficientBalance] = useState(false);
-  const [waveValues, setWaveValues] = useState<number[]>(Array.from({ length: 20 }, () => Math.random()));
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const tickIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const waveRef = useRef<NodeJS.Timeout | null>(null);
+
+  const isEmbed = video.url.includes('youtube.com') || video.url.includes('vimeo.com');
 
   const handleTick = useCallback(() => {
     if (!user) return;
@@ -47,7 +47,6 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
 
   useEffect(() => {
     if (isPlaying) {
-      // Second counter
       intervalRef.current = setInterval(() => {
         setElapsed(n => {
           const next = n + 1;
@@ -56,26 +55,18 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
         });
       }, 1000);
 
-      // Tick every TICK_INTERVAL_MS
       tickIntervalRef.current = setInterval(() => {
         handleTick();
         setElapsed(0);
       }, TICK_INTERVAL_MS);
-
-      // Waveform animation
-      waveRef.current = setInterval(() => {
-        setWaveValues(Array.from({ length: 20 }, () => Math.random()));
-      }, 200);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (tickIntervalRef.current) clearInterval(tickIntervalRef.current);
-      if (waveRef.current) clearInterval(waveRef.current);
     }
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (tickIntervalRef.current) clearInterval(tickIntervalRef.current);
-      if (waveRef.current) clearInterval(waveRef.current);
     };
   }, [isPlaying, handleTick]);
 
@@ -125,7 +116,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
         transition={{ type: 'spring', damping: 25 }}
         className="w-full max-w-4xl"
       >
-       {/* Header */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-4 sticky top-0 z-10" style={{ background: 'rgba(0,0,0,0.95)', paddingTop: '4px' }}>
           <div>
             <h2 className="font-orbitron font-bold text-white text-lg">{video.title}</h2>
@@ -155,82 +146,70 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
             boxShadow: isPlaying ? '0 0 60px rgba(255,107,0,0.15)' : 'none',
           }}
         >
-          {/* Placeholder video visual */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `linear-gradient(135deg, #0a0a0a 0%, #111 50%, #0a0a0a 100%)`,
-            }}
-          />
-
-          {/* Grid overlay */}
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: 'linear-gradient(rgba(255,107,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,107,0,0.03) 1px, transparent 1px)',
-              backgroundSize: '40px 40px',
-            }}
-          />
-
-          {/* Center play area */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            {!isPlaying ? (
-              <motion.button
-                onClick={handlePlay}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="relative"
-              >
-                <motion.div
-                  animate={{ scale: [1, 1.15, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="w-20 h-20 rounded-full flex items-center justify-center"
-                  style={{
-                    background: 'rgba(255,107,0,0.15)',
-                    border: '2px solid rgba(255,107,0,0.5)',
-                  }}
+          {!isPlaying && (
+            <>
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #111 50%, #0a0a0a 100%)' }} />
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: 'linear-gradient(rgba(255,107,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,107,0,0.03) 1px, transparent 1px)',
+                  backgroundSize: '40px 40px',
+                }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <motion.button
+                  onClick={handlePlay}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="relative"
                 >
-                  <Play size={32} style={{ color: '#ff6b00', marginLeft: 4 }} />
-                </motion.div>
-                {/* Ripple rings */}
-                {[1, 2, 3].map(i => (
                   <motion.div
-                    key={i}
-                    className="absolute inset-0 rounded-full border"
-                    style={{ borderColor: `rgba(255,107,0,${0.3 / i})` }}
-                    animate={{ scale: [1, 1 + i * 0.3], opacity: [0.8, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, delay: i * 0.4 }}
-                  />
-                ))}
-              </motion.button>
-            ) : (
-              <div className="text-center">
-                {/* Waveform visualization */}
-                <div className="flex items-end gap-1 justify-center h-16 mb-4">
-                  {waveValues.map((v, i) => (
+                    animate={{ scale: [1, 1.15, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="w-20 h-20 rounded-full flex items-center justify-center"
+                    style={{ background: 'rgba(255,107,0,0.15)', border: '2px solid rgba(255,107,0,0.5)' }}
+                  >
+                    <Play size={32} style={{ color: '#ff6b00', marginLeft: 4 }} />
+                  </motion.div>
+                  {[1, 2, 3].map(i => (
                     <motion.div
                       key={i}
-                      className="waveform-bar"
-                      animate={{ scaleY: v * 0.8 + 0.2 }}
-                      transition={{ duration: 0.2 }}
-                      style={{ height: '60px' }}
+                      className="absolute inset-0 rounded-full border"
+                      style={{ borderColor: `rgba(255,107,0,${0.3 / i})` }}
+                      animate={{ scale: [1, 1 + i * 0.3], opacity: [0.8, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.4 }}
                     />
                   ))}
-                </div>
-                <div className="font-orbitron text-sm" style={{ color: '#ff6b0066' }}>
-                  PLAYING
-                </div>
+                </motion.button>
               </div>
-            )}
-          </div>
+            </>
+          )}
 
-          {/* Top right: session stats */}
+          {isPlaying && isEmbed && (
+            <iframe
+              src={`${video.url}${video.url.includes('?') ? '&' : '?'}autoplay=1&mute=${isMuted ? 1 : 0}`}
+              className="absolute inset-0 w-full h-full"
+              style={{ border: 'none' }}
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+            />
+          )}
+          {isPlaying && !isEmbed && (
+            <video
+              src={video.url}
+              autoPlay
+              muted={isMuted}
+              controls
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
+
           {isPlaying && currentSession && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               className="absolute top-4 right-4 p-3 rounded-lg"
-              style={{ background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,107,0,0.2)', backdropFilter: 'blur(10px)' }}
+              style={{ background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,107,0,0.2)', backdropFilter: 'blur(10px)', zIndex: 5 }}
             >
               <div className="text-xs font-orbitron mb-1" style={{ color: '#ff6b0088', letterSpacing: '0.1em' }}>SESSION</div>
               <div className="flex items-center gap-2 text-xs" style={{ color: '#888' }}>
@@ -248,9 +227,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
             </motion.div>
           )}
 
-          {/* Bottom: progress + controls */}
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            {/* 30s countdown bar */}
+          <div className="absolute bottom-0 left-0 right-0 p-4" style={{ zIndex: 5 }}>
             {isPlaying && (
               <div className="mb-3">
                 <div className="flex items-center justify-between text-xs font-orbitron mb-1" style={{ color: '#ff6b0066', letterSpacing: '0.08em' }}>
@@ -267,7 +244,6 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
               </div>
             )}
 
-            {/* Controls */}
             <div className="flex items-center gap-3">
               <motion.button
                 onClick={isPlaying ? handlePause : handlePlay}
@@ -276,10 +252,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
                 className="p-2 rounded-lg"
                 style={{ background: isPlaying ? 'rgba(255,107,0,0.2)' : 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.3)' }}
               >
-                {isPlaying
-                  ? <Pause size={18} style={{ color: '#ff6b00' }} />
-                  : <Play size={18} style={{ color: '#ff6b00' }} />
-                }
+                {isPlaying ? <Pause size={18} style={{ color: '#ff6b00' }} /> : <Play size={18} style={{ color: '#ff6b00' }} />}
               </motion.button>
 
               <motion.button
@@ -288,15 +261,11 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
                 className="p-2 rounded-lg"
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #2a2a2a' }}
               >
-                {isMuted
-                  ? <VolumeX size={16} style={{ color: '#555' }} />
-                  : <Volume2 size={16} style={{ color: '#888' }} />
-                }
+                {isMuted ? <VolumeX size={16} style={{ color: '#555' }} /> : <Volume2 size={16} style={{ color: '#888' }} />}
               </motion.button>
 
               <div className="flex-1" />
 
-              {/* Rate indicator */}
               <div
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
                 style={{ background: 'rgba(255,107,0,0.08)', border: '1px solid rgba(255,107,0,0.15)' }}
@@ -310,7 +279,6 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
           </div>
         </div>
 
-        {/* Tick notification */}
         <AnimatePresence>
           {tickMessage && (
             <motion.div
@@ -319,30 +287,12 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
               exit={{ opacity: 0, x: 20 }}
               className="mt-3 flex items-center gap-3 p-3 rounded-lg"
               style={{
-                background: tickMessage.type === 'success'
-                  ? 'rgba(0,255,136,0.05)'
-                  : tickMessage.type === 'error'
-                  ? 'rgba(255,68,68,0.05)'
-                  : 'rgba(255,107,0,0.05)',
-                border: `1px solid ${
-                  tickMessage.type === 'success' ? 'rgba(0,255,136,0.2)'
-                  : tickMessage.type === 'error' ? 'rgba(255,68,68,0.2)'
-                  : 'rgba(255,107,0,0.2)'
-                }`,
+                background: tickMessage.type === 'success' ? 'rgba(0,255,136,0.05)' : tickMessage.type === 'error' ? 'rgba(255,68,68,0.05)' : 'rgba(255,107,0,0.05)',
+                border: `1px solid ${tickMessage.type === 'success' ? 'rgba(0,255,136,0.2)' : tickMessage.type === 'error' ? 'rgba(255,68,68,0.2)' : 'rgba(255,107,0,0.2)'}`,
               }}
             >
-              {tickMessage.type === 'success'
-                ? <CheckCircle size={16} style={{ color: '#00ff88' }} />
-                : tickMessage.type === 'error'
-                ? <AlertTriangle size={16} style={{ color: '#ff4444' }} />
-                : <Zap size={16} style={{ color: '#ff6b00' }} />
-              }
-              <span className="text-xs font-orbitron" style={{
-                color: tickMessage.type === 'success' ? '#00ff88'
-                  : tickMessage.type === 'error' ? '#ff4444'
-                  : '#ff6b00',
-                letterSpacing: '0.06em',
-              }}>
+              {tickMessage.type === 'success' ? <CheckCircle size={16} style={{ color: '#00ff88' }} /> : tickMessage.type === 'error' ? <AlertTriangle size={16} style={{ color: '#ff4444' }} /> : <Zap size={16} style={{ color: '#ff6b00' }} />}
+              <span className="text-xs font-orbitron" style={{ color: tickMessage.type === 'success' ? '#00ff88' : tickMessage.type === 'error' ? '#ff4444' : '#ff6b00', letterSpacing: '0.06em' }}>
                 {tickMessage.text}
               </span>
               {tickMessage.type === 'success' && (
@@ -354,7 +304,6 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
           )}
         </AnimatePresence>
 
-        {/* Insufficient balance warning */}
         {insufficientBalance && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -364,9 +313,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
           >
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle size={16} style={{ color: '#ff4444' }} />
-              <span className="font-orbitron text-sm font-bold" style={{ color: '#ff4444' }}>
-                INSUFFICIENT BALANCE
-              </span>
+              <span className="font-orbitron text-sm font-bold" style={{ color: '#ff4444' }}>INSUFFICIENT BALANCE</span>
             </div>
             <p className="text-xs" style={{ color: '#888' }}>
               You need at least <strong style={{ color: '#ff6b00' }}>{video.rate_per_30s} WP</strong> to watch this video.
