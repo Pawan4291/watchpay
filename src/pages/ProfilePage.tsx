@@ -1,9 +1,65 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Zap, Shield, LogOut, LogIn, Loader2, Copy, CheckCircle, ExternalLink, Globe, Lock } from 'lucide-react';
 import { WalletCard } from '../components/WalletCard';
 import { useStore, loginWithSphere, disconnectWallet } from '../lib/store';
 import { SPHERE_WALLET_URL, NETWORK_ID } from '../lib/constants';
+
+function MyVideosSection({ user }: { user: { id: string } }) {
+  const [videos, setVideos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/my-videos?chainPubkey=${encodeURIComponent(user.id)}`)
+      .then(r => r.json())
+      .then(d => setVideos(d.videos ?? []))
+      .finally(() => setLoading(false));
+  }, [user.id]);
+
+  const handleDelete = async (videoId: string) => {
+    if (!confirm('Delete this video?')) return;
+    await fetch('/api/video-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoId, chainPubkey: user.id }),
+    });
+    setVideos(v => v.filter(x => x.id !== videoId));
+  };
+
+  if (loading) return null;
+  if (videos.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15 }}
+      className="p-6 rounded-xl"
+      style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}
+    >
+      <div className="font-orbitron text-xs mb-4" style={{ color: '#ff6b00', letterSpacing: '0.1em' }}>
+        MY VIDEOS
+      </div>
+      <div className="space-y-3">
+        {videos.map(v => (
+          <div key={v.id} className="flex items-center justify-between p-3 rounded-lg" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
+            <div>
+              <div className="text-sm" style={{ color: '#fff' }}>{v.title}</div>
+              <div className="text-xs mt-0.5" style={{ color: '#555' }}>{v.rate_per_30s} UCT / 30s</div>
+            </div>
+            <button
+              onClick={() => handleDelete(v.id)}
+              className="px-3 py-1.5 rounded text-xs font-orbitron"
+              style={{ background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.3)', color: '#ff4444', cursor: 'pointer' }}
+            >
+              DELETE
+            </button>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
 
 export function ProfilePage() {
   const { user, wallet, isConnecting } = useStore();
@@ -302,6 +358,9 @@ export function ProfilePage() {
         >
           {wallet && <WalletCard />}
         </motion.div>
+
+        {/* My Videos */}
+        <MyVideosSection user={user} />
 
         {/* How it works */}
         <motion.div
