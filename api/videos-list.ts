@@ -6,7 +6,7 @@ export default async function handler(req: any, res: any) {
 
     const { data, error } = await supabase
       .from('videos')
-      .select('*, users:creator_id (real_nametag)')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) return res.status(500).json({ error: error.message });
@@ -16,8 +16,8 @@ export default async function handler(req: any, res: any) {
       title: v.title,
       url: v.url,
       thumbnail: `https://picsum.photos/seed/${v.id}/640/360`,
-      creator: v.users?.real_nametag ? `@${v.users.real_nametag}` : '@unknown',
-      creator_id: v.creator_id,
+      creator: `@${v.creator_nametag}`,
+      creator_id: v.creator_chain_pubkey,
       rate_per_30s: Number(v.rate_per_30s),
       views: 0,
       duration: '—',

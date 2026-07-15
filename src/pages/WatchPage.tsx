@@ -170,7 +170,7 @@ export function WatchPage() {
   const [videos, setVideos] = useState<Video[]>([]);
 
   useEffect(() => {
-    fetch('/api/settlements/total').then(r => r.json()).then(d => setTotalSettledFromDB(`${d.total ?? 0} UCT`)).catch(() => {});
+    fetch('/api/settlements-total').then(r => r.json()).then(d => setTotalSettledFromDB(`${d.total ?? 0} UCT`)).catch(() => {});
     fetch('/api/watch-stats').then(r => r.json()).then(d => {
       setActiveSessions(d.activeSessions ?? 0);
       setCreatorsEarning(d.creatorsEarning ?? 0);
