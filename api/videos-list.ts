@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-export default async function handler(req: any, res: any) {
+export default async function handler(_req: any, res: any) {
   try {
     const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
