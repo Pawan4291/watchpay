@@ -20,7 +20,7 @@ export default async function handler(_req: any, res: any) {
       creator: `@${v.creator_nametag}`,
       creator_id: v.creator_chain_pubkey,
       rate_per_30s: Number(v.rate_per_30s),
-      views: 0,
+      views: v.views ?? 0,
       duration: '—',
       category: 'General',
       description: '',

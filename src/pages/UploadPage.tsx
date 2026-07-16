@@ -13,7 +13,7 @@ interface VideoForm {
   category: string;
 }
 
-const CATEGORIES = ['Tech', 'DeFi', 'Architecture', 'Tokenomics', 'Dev Guide', 'Security', 'Tutorial', 'News'];
+const CATEGORIES = ['Tech', 'DeFi', 'Architecture', 'Tokenomics', 'Dev Guide', 'Security', 'Tutorial', 'News', 'Gaming', 'Nature', 'Funny', 'Music', 'Sports', 'Education', 'Lifestyle', 'Other'];
 
 export function UploadPage() {
   const { user } = useStore();

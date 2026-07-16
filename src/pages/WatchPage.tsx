@@ -8,7 +8,7 @@ import { useStore } from '../lib/store';
 export type { Video } from '../lib/types';
 import type { Video } from '../lib/types';
 
-const CATEGORIES = ['All', 'Tech', 'DeFi', 'Architecture', 'Tokenomics', 'Dev Guide', 'Security'];
+const CATEGORIES = ['All', 'Tech', 'DeFi', 'Architecture', 'Tokenomics', 'Dev Guide', 'Security', 'Tutorial', 'News', 'Gaming', 'Nature', 'Funny', 'Music', 'Sports', 'Education', 'Lifestyle', 'Other'];
 
 function formatViews(n: number): string {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -90,13 +90,15 @@ function VideoCard({ video, onPlay }: { video: Video; onPlay: () => void }) {
             </motion.div>
           </motion.div>
 
-          {/* Duration badge */}
-          <div
-            className="absolute bottom-2 right-2 px-2 py-0.5 rounded font-orbitron text-xs"
-            style={{ background: 'rgba(0,0,0,0.8)', color: '#fff', fontSize: '0.65rem' }}
-          >
-            {video.duration}
-          </div>
+          {/* Duration badge — only show if we actually have a real duration */}
+          {video.duration && video.duration !== '—' && (
+            <div
+              className="absolute bottom-2 right-2 px-2 py-0.5 rounded font-orbitron text-xs"
+              style={{ background: 'rgba(0,0,0,0.8)', color: '#fff', fontSize: '0.65rem' }}
+            >
+              {video.duration}
+            </div>
+          )}
 
           {/* Category badge */}
           <div
@@ -137,10 +139,12 @@ function VideoCard({ video, onPlay }: { video: Video; onPlay: () => void }) {
                 <Eye size={11} />
                 {formatViews(video.views)}
               </span>
-              <span className="flex items-center gap-1">
-                <Clock size={11} />
-                {video.duration}
-              </span>
+              {video.duration && video.duration !== '—' && (
+                <span className="flex items-center gap-1">
+                  <Clock size={11} />
+                  {video.duration}
+                </span>
+              )}
             </div>
 
             <div

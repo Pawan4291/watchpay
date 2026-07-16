@@ -12,5 +12,12 @@ export default async function handler(req: any, res: any) {
   });
 
   if (error) return res.status(500).json({ error: error.message });
+
+ try {
+    await supabase.rpc('increment_video_views', { vid: videoId });
+  } catch {
+    // non-fatal, ignore
+  }
+
   return res.status(200).json({ ok: true });
 }

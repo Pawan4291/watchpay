@@ -67,20 +67,8 @@ export function Nav({ activeTab, onTabChange, isLoggedIn }: NavProps) {
             </div>
           </motion.div>
 
-          {/* Ticker */}
-          <div className="hidden md:flex items-center gap-2 flex-1 mx-8 overflow-hidden">
-            <div className="ticker-wrap flex-1 text-xs font-orbitron" style={{ color: '#ff6b0044', letterSpacing: '0.08em' }}>
-              <div className="ticker-content">
-                UCT/USD: $0.0042 &nbsp;•&nbsp; AGENT ACTIVE &nbsp;•&nbsp; TESTNET2 &nbsp;•&nbsp; SETTLEMENTS: 2,847 &nbsp;•&nbsp; SESSIONS: 47 &nbsp;•&nbsp;
-                UCT COIN ID: f581d30f...24dc0 &nbsp;•&nbsp; SPHERE SDK v0.10.2 &nbsp;•&nbsp; AGENT ACTIVE &nbsp;•&nbsp;
-                UCT/USD: $0.0042 &nbsp;•&nbsp; AGENT ACTIVE &nbsp;•&nbsp; TESTNET2 &nbsp;•&nbsp; SETTLEMENTS: 2,847 &nbsp;•&nbsp; SESSIONS: 47 &nbsp;•&nbsp;
-                UCT COIN ID: f581d30f...24dc0 &nbsp;•&nbsp; SPHERE SDK v0.10.2 &nbsp;•&nbsp; AGENT ACTIVE &nbsp;•&nbsp;
-              </div>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex items-center gap-1">
+          {/* Tabs — centered */}
+          <div className="flex items-center gap-1 flex-1 justify-center">
             {tabs.map(tab => {
               const canAccess = tab.public || isLoggedIn;
               const Icon = tab.icon;
