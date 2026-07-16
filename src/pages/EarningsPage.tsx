@@ -44,6 +44,16 @@ export function EarningsPage() {
       .catch(() => {});
   }, [user]);
 
+  const [pendingAmount, setPendingAmount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    fetch(`/api/pending-for-creator?creator_id=${user.id}`)
+      .then(r => r.json())
+      .then(d => setPendingAmount(d.amount_owed ?? 0))
+      .catch(() => {});
+  }, [user]);
+
   const totalEarned = settlements.reduce((sum, s) => sum + s.amount, 0);
   const avgSettlement = settlements.length > 0 ? totalEarned / settlements.length : 0;
 
@@ -69,7 +79,7 @@ export function EarningsPage() {
           { label: 'Total Earned', value: `${formatUCT(totalEarned)} UCT`, icon: DollarSign, highlight: true },
           { label: 'Settlements', value: String(settlements.length), icon: Award, highlight: false },
           { label: 'Avg Settlement', value: `${formatUCT(avgSettlement)} UCT`, icon: TrendingUp, highlight: false },
-          { label: 'Pending', value: '0.0024 UCT', icon: Clock, highlight: false },
+          { label: 'Pending', value: `${formatUCT(pendingAmount)} UCT`, icon: Clock, highlight: false },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -285,10 +295,10 @@ export function EarningsPage() {
         <div className="flex items-center justify-between">
           <div>
             <div className="font-orbitron text-2xl font-bold" style={{ color: '#ff6b0066' }}>
-              0.0024 UCT
+              {formatUCT(pendingAmount)} UCT
             </div>
             <div className="text-xs mt-1" style={{ color: '#444' }}>
-              From 8 active viewer sessions
+              Awaiting next agent settlement run
             </div>
           </div>
           <div

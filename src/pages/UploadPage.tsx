@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Link, Film, DollarSign, CheckCircle, AlertCircle, Zap, Info } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { UCT_COIN_ID } from '../lib/constants';
+import { toEmbedUrl } from '../lib/videoUrl';
 
 interface VideoForm {
   title: string;
@@ -74,7 +75,7 @@ export function UploadPage() {
           chainPubkey: user.id,
           nametag: user.nametag,
           title: form.title,
-          url: form.url,
+          url: toEmbedUrl(form.url),
           rate_per_30s: rate,
         }),
       }).then(r => r.json());
@@ -215,7 +216,7 @@ export function UploadPage() {
           <div>
             <label className="flex items-center gap-2 text-xs font-orbitron mb-2" style={{ color: '#888', letterSpacing: '0.1em' }}>
               <Link size={12} />
-              VIDEO URL * (YouTube embed, Vimeo, or direct MP4)
+              VIDEO URL * (paste any YouTube/Vimeo link or direct MP4 — auto-converted)
             </label>
             <input
               type="url"
@@ -226,7 +227,7 @@ export function UploadPage() {
             />
             <div className="text-xs mt-1 flex items-center gap-1" style={{ color: '#444' }}>
               <Info size={10} />
-              For YouTube: use the embed URL format (youtube.com/embed/VIDEO_ID)
+              Paste any YouTube or Vimeo link — we'll convert it automatically.
             </div>
           </div>
 
