@@ -33,7 +33,24 @@ function MyVideosSection({ user }: { user: { id: string } }) {
     setVideos(v => v.filter(x => x.id !== videoId));
   };
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="p-6 rounded-xl flex flex-col items-center justify-center py-10"
+        style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-8 h-8 rounded-full mb-3"
+          style={{ border: '3px solid rgba(255,107,0,0.15)', borderTopColor: '#ff6b00' }}
+        />
+        <div className="font-orbitron text-xs" style={{ color: '#555', letterSpacing: '0.1em' }}>LOADING YOUR VIDEOS...</div>
+      </motion.div>
+    );
+  }
   if (videos.length === 0) return null;
 
   return (
