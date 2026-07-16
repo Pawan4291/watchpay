@@ -18,12 +18,15 @@ function MyVideosSection({ user }: { user: { id: string } }) {
 
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
-  const handleDelete = async (videoId: string) => {
-    if (confirmingId !== videoId) {
-      setConfirmingId(videoId);
-      setTimeout(() => setConfirmingId(prev => (prev === videoId ? null : prev)), 3000);
-      return;
-    }
+  const handleDeleteClick = (videoId: string) => {
+    setConfirmingId(videoId);
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmingId(null);
+  };
+
+  const handleConfirmDelete = async (videoId: string) => {
     setConfirmingId(null);
     await fetch('/api/video-delete', {
       method: 'POST',
@@ -32,26 +35,6 @@ function MyVideosSection({ user }: { user: { id: string } }) {
     });
     setVideos(v => v.filter(x => x.id !== videoId));
   };
-
-  if (loading) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="p-6 rounded-xl flex flex-col items-center justify-center py-10"
-        style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}
-      >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-8 h-8 rounded-full mb-3"
-          style={{ border: '3px solid rgba(255,107,0,0.15)', borderTopColor: '#ff6b00' }}
-        />
-        <div className="font-orbitron text-xs" style={{ color: '#555', letterSpacing: '0.1em' }}>LOADING YOUR VIDEOS...</div>
-      </motion.div>
-    );
-  }
-  if (videos.length === 0) return null;
 
   return (
     <motion.div
@@ -64,6 +47,27 @@ function MyVideosSection({ user }: { user: { id: string } }) {
       <div className="font-orbitron text-xs mb-4" style={{ color: '#ff6b00', letterSpacing: '0.1em' }}>
         MY VIDEOS
       </div>
+
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-6">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            className="w-8 h-8 rounded-full mb-3"
+            style={{ border: '3px solid rgba(255,107,0,0.15)', borderTopColor: '#ff6b00' }}
+          />
+          <div className="font-orbitron text-xs" style={{ color: '#555', letterSpacing: '0.1em' }}>LOADING YOUR VIDEOS...</div>
+        </div>
+      )}
+
+      {!loading && videos.length === 0 && (
+        <div className="text-center py-6">
+          <div className="text-sm" style={{ color: '#555' }}>No videos uploaded yet.</div>
+          <div className="text-xs mt-1" style={{ color: '#444' }}>Go to the Upload tab to publish your first video.</div>
+        </div>
+      )}
+
+      {!loading && videos.length > 0 && (
       <div className="space-y-3">
         {videos.map(v => (
           <div key={v.id} className="flex items-center justify-between p-3 rounded-lg" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
@@ -71,16 +75,36 @@ function MyVideosSection({ user }: { user: { id: string } }) {
               <div className="text-sm" style={{ color: '#fff' }}>{v.title}</div>
               <div className="text-xs mt-0.5" style={{ color: '#555' }}>{v.rate_per_30s} UCT / 30s</div>
             </div>
-            <button
-              onClick={() => handleDelete(v.id)}
-              className="px-3 py-1.5 rounded text-xs font-orbitron"
-              style={{ background: confirmingId === v.id ? 'rgba(255,68,68,0.3)' : 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.3)', color: '#ff4444', cursor: 'pointer' }}
-            >
-              {confirmingId === v.id ? 'CONFIRM?' : 'DELETE'}
-            </button>
+            {confirmingId === v.id ? (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCancelDelete}
+                  className="px-3 py-1.5 rounded text-xs font-orbitron"
+                  style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888', cursor: 'pointer' }}
+                >
+                  BACK
+                </button>
+                <button
+                  onClick={() => handleConfirmDelete(v.id)}
+                  className="px-3 py-1.5 rounded text-xs font-orbitron"
+                  style={{ background: 'rgba(255,68,68,0.3)', border: '1px solid rgba(255,68,68,0.5)', color: '#ff4444', cursor: 'pointer' }}
+                >
+                  CONFIRM
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => handleDeleteClick(v.id)}
+                className="px-3 py-1.5 rounded text-xs font-orbitron"
+                style={{ background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.3)', color: '#ff4444', cursor: 'pointer' }}
+              >
+                DELETE
+              </button>
+            )}
           </div>
         ))}
       </div>
+      )}
     </motion.div>
   );
 }
