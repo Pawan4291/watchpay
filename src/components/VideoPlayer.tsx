@@ -227,7 +227,10 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
             </motion.div>
           )}
 
-          <div className="absolute bottom-0 left-0 right-0 p-4" style={{ zIndex: 5 }}>
+          </div>
+
+        {/* Controls — now outside the video frame, no overlap */}
+        <div className="mt-3 p-4 rounded-xl" style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}>
             {isPlaying && (
               <div className="mb-3">
                 <div className="flex items-center justify-between text-xs font-orbitron mb-1" style={{ color: '#ff6b0066', letterSpacing: '0.08em' }}>
@@ -276,7 +279,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
                 </span>
               </div>
             </div>
-          </div>
+          
         </div>
 
         <AnimatePresence>

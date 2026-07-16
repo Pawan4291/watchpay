@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(_req: any, res: any) {
+  res.setHeader('Cache-Control', 'no-store');
   try {
     const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 

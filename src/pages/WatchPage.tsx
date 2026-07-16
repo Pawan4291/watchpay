@@ -175,7 +175,7 @@ export function WatchPage() {
       setActiveSessions(d.activeSessions ?? 0);
       setCreatorsEarning(d.creatorsEarning ?? 0);
     }).catch(() => {});
-    fetch('/api/videos-list').then(r => r.json()).then(d => setVideos(d.videos ?? [])).catch(() => {});
+    fetch('/api/videos-list', { cache: 'no-store' }).then(r => r.json()).then(d => setVideos(d.videos ?? [])).catch(() => {});
   }, []);
 
   const { user } = useStore();

@@ -14,7 +14,7 @@ export default async function handler(req: any, res: any) {
     const { data: pending, error: pendingErr } = await supabase
       .from('pending_settlements')
       .select('*')
-      .gt('amount_owed', 0);
+      .gte('amount_owed', 5);
 
     if (pendingErr) return res.status(500).json({ error: pendingErr.message });
     if (!pending || pending.length === 0) {
