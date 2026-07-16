@@ -10,7 +10,7 @@ function MyVideosSection({ user }: { user: { id: string } }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/my-videos?chainPubkey=${encodeURIComponent(user.id)}`)
+    fetch(`/api/my-videos?chainPubkey=${encodeURIComponent(user.id)}`, { cache: 'no-store' })
       .then(r => r.json())
       .then(d => setVideos(d.videos ?? []))
       .finally(() => setLoading(false));

@@ -164,6 +164,7 @@ function VideoCard({ video, onPlay }: { video: Video; onPlay: () => void }) {
 }
 
 export function WatchPage() {
+  const [videosLoading, setVideosLoading] = useState(true);
   const [totalSettledFromDB, setTotalSettledFromDB] = useState('0 UCT');
   const [activeSessions, setActiveSessions] = useState(0);
   const [creatorsEarning, setCreatorsEarning] = useState(0);
@@ -175,7 +176,7 @@ export function WatchPage() {
       setActiveSessions(d.activeSessions ?? 0);
       setCreatorsEarning(d.creatorsEarning ?? 0);
     }).catch(() => {});
-    fetch('/api/videos-list', { cache: 'no-store' }).then(r => r.json()).then(d => setVideos(d.videos ?? [])).catch(() => {});
+    fetch('/api/videos-list', { cache: 'no-store' }).then(r => r.json()).then(d => setVideos(d.videos ?? [])).catch(() => {}).finally(() => setVideosLoading(false));
   }, []);
 
   const { user } = useStore();
@@ -363,7 +364,19 @@ export function WatchPage() {
         ))}
       </div>
 
-      {filtered.length === 0 && (
+      {videosLoading && (
+        <div className="flex flex-col items-center justify-center py-20">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            className="w-10 h-10 rounded-full mb-4"
+            style={{ border: '3px solid rgba(255,107,0,0.15)', borderTopColor: '#ff6b00' }}
+          />
+          <div className="font-orbitron text-xs" style={{ color: '#555', letterSpacing: '0.1em' }}>LOADING VIDEOS...</div>
+        </div>
+      )}
+
+      {!videosLoading && filtered.length === 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

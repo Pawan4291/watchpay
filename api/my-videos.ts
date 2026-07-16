@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req: any, res: any) {
+  res.setHeader('Cache-Control', 'no-store');
   const { chainPubkey } = req.query;
   if (!chainPubkey) return res.status(400).json({ error: 'missing chainPubkey' });
 

@@ -50,9 +50,18 @@ export function EarningsPage() {
         <h1 className="font-orbitron text-4xl font-bold mb-2" style={{ color: '#fff' }}>
           EARNINGS <span style={{ color: '#ff6b00' }}>DASHBOARD</span>
         </h1>
-        <p style={{ color: '#555', fontSize: '0.95rem' }}>
-          Real on-chain settlements from the autonomous agent · @{user.nametag}
-        </p>
+        <div className="flex items-center justify-between">
+          <p style={{ color: '#555', fontSize: '0.95rem' }}>
+            Real on-chain settlements from the autonomous agent · @{user.nametag}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-3 py-1.5 rounded-lg font-orbitron text-xs"
+            style={{ background: '#111', border: '1px solid #2a2a2a', color: '#888', cursor: 'pointer' }}
+          >
+            ↻ REFRESH
+          </button>
+        </div>
       </motion.div>
 
       <motion.div
