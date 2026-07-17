@@ -24,6 +24,16 @@ export default async function handler(req: any, res: any) {
     updated_at: new Date().toISOString(),
   });
 
+  // Track per-video earnings for the creator's breakdown view
+  const { data: videoEarning } = await supabase.from('video_earnings').select('total_earned').eq('video_id', videoId).maybeSingle();
+  const newVideoTotal = (videoEarning?.total_earned ?? 0) + amount;
+  await supabase.from('video_earnings').upsert({
+    video_id: videoId,
+    creator_chain_pubkey: video.creator_chain_pubkey,
+    total_earned: newVideoTotal,
+    updated_at: new Date().toISOString(),
+  });
+
   await supabase.from('watch_sessions')
     .update({ total_ticks: 1, total_spent: amount })
     .eq('video_id', videoId)

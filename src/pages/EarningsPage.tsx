@@ -18,8 +18,9 @@ export function EarningsPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [settlements, setSettlements] = useState<Array<{ id: string; amount: number; tx_id: string; memo: string; timestamp: string }>>([]);
   const [pendingAmount, setPendingAmount] = useState(0);
+  const [videoEarnings, setVideoEarnings] = useState<Array<{ video_id: string; title: string; total_earned: number }>>([]);
 
-  useEffect(() => {
+ const refetchAll = () => {
     if (!user) return;
     fetch(`/api/settlements?creator_id=${user.id}`, { cache: 'no-store' })
       .then(r => r.json())
@@ -29,6 +30,14 @@ export function EarningsPage() {
       .then(r => r.json())
       .then(d => setPendingAmount(d.amount_owed ?? 0))
       .catch(() => {});
+    fetch(`/api/video-earnings?creator_id=${user.id}`, { cache: 'no-store' })
+      .then(r => r.json())
+      .then(setVideoEarnings)
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    refetchAll();
   }, [user]);
 
   if (!user) {
@@ -55,7 +64,7 @@ export function EarningsPage() {
             Real on-chain settlements from the autonomous agent · @{user.nametag}
           </p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={refetchAll}
             className="px-3 py-1.5 rounded-lg font-orbitron text-xs"
             style={{ background: '#111', border: '1px solid #2a2a2a', color: '#888', cursor: 'pointer' }}
           >
@@ -86,10 +95,31 @@ export function EarningsPage() {
         </div>
         <div className="mt-4 text-xs text-center" style={{ color: '#444' }}>
           {pendingAmount >= SETTLEMENT_THRESHOLD
-            ? `Above the ${SETTLEMENT_THRESHOLD} UCT threshold — will be paid on the next daily agent run.`
-            : `Needs to reach ${SETTLEMENT_THRESHOLD} UCT before the agent pays out (once per day).`}
+            ? `Above the ${SETTLEMENT_THRESHOLD} UCT threshold — will be paid on the next agent run (00:00 or 12:00 UTC).`
+            : `Needs to reach ${SETTLEMENT_THRESHOLD} UCT before the agent pays out (runs twice daily).`}
         </div>
       </motion.div>
+
+      {videoEarnings.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 p-6 rounded-xl"
+          style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}
+        >
+          <div className="font-orbitron text-xs mb-4" style={{ color: '#555', letterSpacing: '0.1em' }}>
+            EARNINGS BY VIDEO
+          </div>
+          <div className="space-y-2">
+            {videoEarnings.map(v => (
+              <div key={v.video_id} className="flex items-center justify-between p-3 rounded-lg" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
+                <span className="text-sm" style={{ color: '#fff' }}>{v.title}</span>
+                <span className="font-orbitron text-sm font-bold" style={{ color: '#ff6b00' }}>{formatNum(v.total_earned)} WP</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       <motion.div
         initial={{ opacity: 0 }}
@@ -100,7 +130,7 @@ export function EarningsPage() {
       >
         <Zap size={18} style={{ color: '#ff6b00', flexShrink: 0, marginTop: 2 }} />
         <div className="text-xs leading-relaxed" style={{ color: '#666' }}>
-          Once per day, the agent pays out any creator whose pending balance is at least{' '}
+          Twice daily (00:00 and 12:00 UTC), the agent pays out any creator whose pending balance is at least{' '}
           <strong style={{ color: '#ff6b00' }}>{SETTLEMENT_THRESHOLD} UCT</strong>, sending real UCT directly to your Sphere wallet.
           Total earned so far: <strong style={{ color: '#00ff88' }}>{formatNum(totalEarned)} UCT</strong> across{' '}
           <strong style={{ color: '#fff' }}>{settlements.length}</strong> payouts.

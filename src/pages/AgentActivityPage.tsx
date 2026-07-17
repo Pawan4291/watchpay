@@ -130,21 +130,6 @@ export function AgentActivityPage() {
           </div>
           <div className="flex items-center gap-3">
             <motion.button
-              onClick={() => setShowTerminal(t => !t)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg font-orbitron text-xs"
-              style={{
-                background: showTerminal ? 'rgba(255,107,0,0.15)' : '#111',
-                border: `1px solid ${showTerminal ? 'rgba(255,107,0,0.4)' : '#2a2a2a'}`,
-                color: showTerminal ? '#ff6b00' : '#555',
-                cursor: 'pointer',
-              }}
-            >
-              <Terminal size={13} />
-              TERMINAL
-            </motion.button>
-            <motion.button
               onClick={handleRefresh}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
