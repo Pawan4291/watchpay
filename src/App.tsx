@@ -188,10 +188,12 @@ function SplashScreen({ onEnter }: { onEnter: () => void }) {
 }
 
 function AppShell() {
-  const [showSplash, setShowSplash] = useState(true);
+  const location = useLocation();
+  const [showSplash, setShowSplash] = useState(() => {
+    return location.pathname === '/' || location.pathname === '';
+  });
   const { user } = useStore();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const activeTab: Tab = PATH_TO_TAB[location.pathname] ?? 'watch';
   const setActiveTab = (tab: Tab) => navigate(TAB_TO_PATH[tab]);
