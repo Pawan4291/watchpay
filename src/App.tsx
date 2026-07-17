@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedBackground, CustomCursor } from './components/AnimatedBackground';
 import { Nav } from './components/Nav';
@@ -11,6 +12,22 @@ import { FloatingNotifications } from './components/FloatingMetrics';
 import { useStore } from './lib/store';
 
 type Tab = 'watch' | 'upload' | 'profile' | 'earnings' | 'agent-activity';
+
+const TAB_TO_PATH: Record<Tab, string> = {
+  'watch': '/watch',
+  'upload': '/upload',
+  'profile': '/profile',
+  'earnings': '/earnings',
+  'agent-activity': '/agent',
+};
+
+const PATH_TO_TAB: Record<string, Tab> = {
+  '/watch': 'watch',
+  '/upload': 'upload',
+  '/profile': 'profile',
+  '/earnings': 'earnings',
+  '/agent': 'agent-activity',
+};
 
 const pageVariants = {
   initial: { opacity: 0, y: 16 },
@@ -170,10 +187,14 @@ function SplashScreen({ onEnter }: { onEnter: () => void }) {
   );
 }
 
-export default function App() {
+function AppShell() {
   const [showSplash, setShowSplash] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>('watch');
   const { user } = useStore();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const activeTab: Tab = PATH_TO_TAB[location.pathname] ?? 'watch';
+  const setActiveTab = (tab: Tab) => navigate(TAB_TO_PATH[tab]);
 
   useEffect(() => {
     import('./lib/store').then(m => m.trySilentLogin());
@@ -214,11 +235,14 @@ export default function App() {
               animate="animate"
               exit="exit"
             >
-              {activeTab === 'watch' && <WatchPage />}
-              {activeTab === 'upload' && <UploadPage />}
-              {activeTab === 'profile' && <ProfilePage />}
-              {activeTab === 'earnings' && <EarningsPage />}
-              {activeTab === 'agent-activity' && <AgentActivityPage />}
+              <Routes>
+                <Route path="/" element={<WatchPage />} />
+                <Route path="/watch" element={<WatchPage />} />
+                <Route path="/upload" element={<UploadPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/earnings" element={<EarningsPage />} />
+                <Route path="/agent" element={<AgentActivityPage />} />
+              </Routes>
             </motion.div>
           </AnimatePresence>
         </main>
@@ -257,5 +281,13 @@ export default function App() {
         </motion.footer>
       </div>
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <HashRouter>
+      <AppShell />
+    </HashRouter>
   );
 }

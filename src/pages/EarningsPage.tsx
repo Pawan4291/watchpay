@@ -100,16 +100,16 @@ export function EarningsPage() {
         </div>
       </motion.div>
 
-      {videoEarnings.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 p-6 rounded-xl"
-          style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}
-        >
-          <div className="font-orbitron text-xs mb-4" style={{ color: '#555', letterSpacing: '0.1em' }}>
-            EARNINGS BY VIDEO
-          </div>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8 p-6 rounded-xl"
+        style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}
+      >
+        <div className="font-orbitron text-xs mb-4" style={{ color: '#555', letterSpacing: '0.1em' }}>
+          EARNINGS BY VIDEO
+        </div>
+        {videoEarnings.length > 0 ? (
           <div className="space-y-2">
             {videoEarnings.map(v => (
               <div key={v.video_id} className="flex items-center justify-between p-3 rounded-lg" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
@@ -118,8 +118,13 @@ export function EarningsPage() {
               </div>
             ))}
           </div>
-        </motion.div>
-      )}
+        ) : (
+          <div className="text-center py-10">
+            <div className="text-sm" style={{ color: '#555' }}>No earnings yet.</div>
+            <div className="text-xs mt-1" style={{ color: '#444' }}>Once someone watches your videos, per-video WP earnings will show here.</div>
+          </div>
+        )}
+      </motion.div>
 
       <motion.div
         initial={{ opacity: 0 }}
