@@ -24,49 +24,61 @@ function StatCard({ label, value, icon: Icon, color = '#ff6b00' }: { label: stri
   );
 }
 
-const TERMINAL_LINES = [
-  '> [AGENT] Starting settlement cycle...',
-  '> [DB] Querying pending_settlements WHERE amount_owed > 0',
-  '> [DB] Found 3 creators with pending amounts',
-  '> [SDK] sphere.payments.send({ recipient: "@satoshi_dev", amount: "4320000", coinId: "f581d30f..." })',
-  '> [SDK] TransferResult: { status: "completed", deliveryPending: false }',
-  '> [DB] Reset pending_settlements.amount_owed = 0 for creator c1',
-  '> [DB] Inserted into settlements: tx_id=a3f8c2d1...',
-  '> [AGENT] Settlement cycle complete. 3 settled, 0 failed.',
-];
+
 
 export function AgentActivityPage() {
   const [logs, setLogs] = useState<AgentLog[]>([]);
 
   useEffect(() => {
-    fetch('/api/agent/logs').then(r => r.json()).then(setLogs).catch(() => {});
+    fetch('/api/agent-logs', { cache: 'no-store' }).then(r => r.json()).then(setLogs).catch(() => {});
   }, []);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'settlement' | 'balance_check'>('all');
   const [showTerminal, setShowTerminal] = useState(false);
   const [terminalLines, setTerminalLines] = useState<string[]>([]);
-  const [nextRunSeconds, setNextRunSeconds] = useState(220);
+  const [nextRunLabel, setNextRunLabel] = useState('');
   const terminalRef = useRef<HTMLDivElement>(null);
 
-  // Countdown timer
   useEffect(() => {
-    const interval = setInterval(() => {
-      setNextRunSeconds(n => {
-        if (n <= 1) return 300; // reset to 5 min
-        return n - 1;
-      });
-    }, 1000);
+    const compute = () => {
+      const now = new Date();
+      const next = new Date(now);
+      const hour = now.getUTCHours();
+      if (hour < 12) {
+        next.setUTCHours(12, 0, 0, 0);
+      } else {
+        next.setUTCDate(next.getUTCDate() + 1);
+        next.setUTCHours(0, 0, 0, 0);
+      }
+      const diffMs = next.getTime() - now.getTime();
+      const h = Math.floor(diffMs / 3600000);
+      const m = Math.floor((diffMs % 3600000) / 60000);
+      setNextRunLabel(`${h}h ${m}m`);
+    };
+    compute();
+    const interval = setInterval(compute, 30000);
     return () => clearInterval(interval);
   }, []);
 
 
-  // Terminal animation
+  // Terminal — shows real recent agent_log entries, formatted as terminal-style lines
   useEffect(() => {
     if (!showTerminal) { setTerminalLines([]); return; }
+    const recentLogs = (logs as AgentLog[]).slice(0, 15).reverse();
+    const lines = recentLogs.map(l => {
+      if (l.action_type === 'settlement') {
+        const txId = String(l.details?.tx_id ?? '');
+        return `> [AGENT] settlement: ${l.details?.creator_nametag ?? '?'} +${l.details?.amount ?? '?'} UCT tx=${txId.slice(0, 16)}...`;
+      }
+      return `> [AGENT] ${l.action_type}: ${JSON.stringify(l.details)}`;
+    });
+    if (lines.length === 0) {
+      lines.push('> [AGENT] No log entries yet.');
+    }
     let i = 0;
     const interval = setInterval(() => {
-      if (i < TERMINAL_LINES.length) {
-        setTerminalLines(prev => [...prev, TERMINAL_LINES[i]]);
+      if (i < lines.length) {
+        setTerminalLines(prev => [...prev, lines[i]]);
         i++;
         if (terminalRef.current) {
           terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
@@ -74,9 +86,9 @@ export function AgentActivityPage() {
       } else {
         clearInterval(interval);
       }
-    }, 400);
+    }, 300);
     return () => clearInterval(interval);
-  }, [showTerminal]);
+  }, [showTerminal, logs]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -86,11 +98,7 @@ export function AgentActivityPage() {
 
   const filteredLogs = filter === 'all' ? logs : logs.filter(l => l.action_type === filter);
 
-  const formatCountdown = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}:${sec.toString().padStart(2, '0')}`;
-  };
+ 
 
   const settlementCount = logs.filter(l => l.action_type === 'settlement').length;
   const checkCount = logs.filter(l => l.action_type === 'balance_check').length;
@@ -173,27 +181,10 @@ export function AgentActivityPage() {
           border: '1px solid rgba(255,107,0,0.15)',
         }}
       >
-        <div
-          className="relative w-20 h-20 flex-shrink-0"
-        >
-          <svg className="w-20 h-20 countdown-ring" viewBox="0 0 80 80">
-            <circle cx="40" cy="40" r="34" fill="none" stroke="#1a1a1a" strokeWidth="4" />
-            <motion.circle
-              cx="40" cy="40" r="34"
-              fill="none"
-              stroke="#ff6b00"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeDasharray={`${2 * Math.PI * 34}`}
-              animate={{ strokeDashoffset: 2 * Math.PI * 34 * (1 - nextRunSeconds / 300) }}
-              transition={{ duration: 1 }}
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="font-orbitron text-sm font-bold" style={{ color: '#ff6b00' }}>
-                {formatCountdown(nextRunSeconds)}
-              </div>
+        <div className="relative w-20 h-20 flex-shrink-0 rounded-full flex items-center justify-center" style={{ border: '3px solid rgba(255,107,0,0.2)' }}>
+          <div className="text-center">
+            <div className="font-orbitron text-xs font-bold" style={{ color: '#ff6b00' }}>
+              {nextRunLabel}
             </div>
           </div>
         </div>
@@ -202,9 +193,9 @@ export function AgentActivityPage() {
             NEXT SETTLEMENT CYCLE
           </div>
           <div className="text-xs mb-3" style={{ color: '#555' }}>
-            QStash fires <code style={{ color: '#ff6b0066' }}>POST /api/agent/settle</code> every 5 minutes.
+           QStash fires <code style={{ color: '#ff6b0066' }}>POST /api/agent-settle</code> twice daily (00:00 and 12:00 UTC).
             The agent queries <code style={{ color: '#ff6b0066' }}>pending_settlements</code> and calls{' '}
-            <code style={{ color: '#ff6b0066' }}>sphere.payments.send()</code> for each creator.
+            <code style={{ color: '#ff6b0066' }}>sphere.payments.send()</code> for creators at or above the 5 UCT threshold.
           </div>
           <div className="flex gap-4 text-xs" style={{ color: '#555' }}>
             <span>Settlements logged: <strong style={{ color: '#ff6b00' }}>{settlementCount}</strong></span>
@@ -256,7 +247,7 @@ export function AgentActivityPage() {
                   {line}
                 </motion.div>
               ))}
-              {terminalLines.length > 0 && terminalLines.length < TERMINAL_LINES.length && (
+              {terminalLines.length > 0 && (
                 <motion.span
                   animate={{ opacity: [1, 0] }}
                   transition={{ duration: 0.8, repeat: Infinity }}

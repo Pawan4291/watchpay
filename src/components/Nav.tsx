@@ -86,9 +86,10 @@ export function Nav({ activeTab, onTabChange, isLoggedIn }: NavProps) {
                 </motion.button>
               );
             })}
+          </div>
 
-            <motion.button
-              onClick={() => (isLoggedIn ? disconnectWallet() : loginWithSphere())}
+          <motion.button
+            onClick={() => (isLoggedIn ? disconnectWallet() : loginWithSphere())}
               disabled={isConnecting}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -102,8 +103,7 @@ export function Nav({ activeTab, onTabChange, isLoggedIn }: NavProps) {
             >
               <Wallet size={13} />
               {isConnecting ? 'Connecting...' : isLoggedIn ? (user?.nametag ? `@${user.nametag}` : `${user?.directAddress?.slice(0, 10)}...`) : 'Connect Wallet'}
-            </motion.button>
-          </div>
+          </motion.button>
         </div>
       </div>
 
