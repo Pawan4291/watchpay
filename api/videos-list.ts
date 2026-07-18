@@ -22,8 +22,8 @@ export default async function handler(_req: any, res: any) {
       rate_per_30s: Number(v.rate_per_30s),
       views: v.views ?? 0,
       duration: '—',
-      category: 'General',
-      description: '',
+      category: v.category ?? 'Other',
+      description: v.description ?? '',
     }));
 
     return res.status(200).json({ videos });

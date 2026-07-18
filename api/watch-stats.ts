@@ -11,9 +11,9 @@ export default async function handler(_req: any, res: any) {
 
     const { data: settlementRows } = await supabase
       .from('settlements')
-      .select('creator_id');
+      .select('creator_chain_pubkey');
 
-    const creatorsEarning = new Set((settlementRows ?? []).map((r: any) => r.creator_id)).size;
+    const creatorsEarning = new Set((settlementRows ?? []).map((r: any) => r.creator_chain_pubkey)).size;
 
     return res.status(200).json({
       activeSessions: activeSessions ?? 0,

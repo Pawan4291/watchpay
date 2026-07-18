@@ -77,6 +77,8 @@ export function UploadPage() {
           title: form.title,
           url: toEmbedUrl(form.url),
           rate_per_30s: rate,
+          category: form.category,
+          description: form.description,
         }),
       }).then(r => r.json());
 

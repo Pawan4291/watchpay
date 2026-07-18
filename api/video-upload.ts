@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).end();
-  const { chainPubkey, nametag, title, url, rate_per_30s } = req.body;
+  const { chainPubkey, nametag, title, url, rate_per_30s, category, description } = req.body;
   if (!chainPubkey || !nametag || !title || !url || !rate_per_30s) {
     return res.status(400).json({ error: 'missing fields' });
   }
@@ -14,6 +14,8 @@ export default async function handler(req: any, res: any) {
     title,
     url,
     rate_per_30s: Number(rate_per_30s),
+    category: category || 'Other',
+    description: description || '',
   }).select().maybeSingle();
 
   if (error) return res.status(500).json({ error: error.message });
