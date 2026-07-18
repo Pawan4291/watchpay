@@ -28,12 +28,14 @@ function StatCard({ label, value, icon: Icon, color = '#ff6b00' }: { label: stri
 
 export function AgentActivityPage() {
   const [logs, setLogs] = useState<AgentLog[]>([]);
+  const [activeSessions, setActiveSessions] = useState(0);
 
   useEffect(() => {
     fetch('/api/agent-logs', { cache: 'no-store' }).then(r => r.json()).then(setLogs).catch(() => {});
+    fetch('/api/watch-stats', { cache: 'no-store' }).then(r => r.json()).then(d => setActiveSessions(d.activeSessions ?? 0)).catch(() => {});
   }, []);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'settlement' | 'balance_check'>('all');
+  const [filter, setFilter] = useState<'all' | 'settlement'>('all');
   const [showTerminal, setShowTerminal] = useState(false);
   const [terminalLines, setTerminalLines] = useState<string[]>([]);
   const [nextRunLabel, setNextRunLabel] = useState('');
@@ -148,11 +150,9 @@ export function AgentActivityPage() {
       {/* Stats grid */}
      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <StatCard label="Total Settled" value={`${logs.filter(l => l.action_type === 'settlement').reduce((s, l) => s + Number(l.details?.amount ?? 0), 0).toFixed(4)} UCT`} icon={TrendingUp} />
-        <StatCard label="Active Sessions" value={String(checkCount)} icon={Activity} />
-        <StatCard label="Creators Paying" value={String(new Set(logs.map(l => l.details?.creator_nametag)).size)} icon={Zap} />
-        <StatCard label="Agent Uptime" value="—" icon={Shield} color="#00ff88" />
-        <StatCard label="Avg Settle Time" value="—" icon={Clock} color="#888" />
-        <StatCard label="TXs Last 24h" value={String(settlementCount)} icon={Activity} />
+        <StatCard label="Active Sessions" value={String(activeSessions)} icon={Activity} />
+        <StatCard label="Creators Paying" value={String(new Set(logs.filter(l => l.action_type === 'settlement').map(l => l.details?.creator_nametag)).size)} icon={Zap} />
+        <StatCard label="Settlements Logged" value={String(settlementCount)} icon={Clock} color="#888" />
       </div>
 
       {/* Next agent run countdown */}
@@ -251,7 +251,7 @@ export function AgentActivityPage() {
         transition={{ delay: 0.3 }}
         className="flex gap-2 mb-6"
       >
-        {(['all', 'settlement', 'balance_check'] as const).map(f => (
+        {(['all', 'settlement'] as const).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -263,9 +263,7 @@ export function AgentActivityPage() {
               cursor: 'pointer',
             }}
           >
-            {f === 'all' ? `ALL (${logs.length})`
-              : f === 'settlement' ? `SETTLEMENTS (${settlementCount})`
-              : `CHECKS (${checkCount})`}
+            {f === 'all' ? `ALL (${logs.length})` : `SETTLEMENTS (${settlementCount})`}
           </button>
         ))}
       </motion.div>
@@ -297,7 +295,7 @@ export function AgentActivityPage() {
         <div className="font-orbitron text-xs mb-4" style={{ color: '#555', letterSpacing: '0.1em' }}>
           AGENT ARCHITECTURE
         </div>
-        <div className="grid md:grid-cols-2 gap-4 text-xs" style={{ color: '#555', lineHeight: 1.7 }}>
+        <div className="text-xs" style={{ color: '#555', lineHeight: 1.7 }}>
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Zap size={12} style={{ color: '#ff6b00' }} />
