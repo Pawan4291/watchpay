@@ -1,187 +1,100 @@
-# WatchPay — Pay-Per-30-Seconds Video App on Unicity Sphere
+# WatchPay
 
-**Track:** Payments & Markets  
-**Network:** Unicity Sphere testnet2 (networkId 4)  
-**Agentic:** YES — settlement + balance-check run autonomously via QStash (no human trigger)  
-**AstridOS:** NOT USED
+Pay-per-30-seconds video watching on Unicity Sphere testnet2. Viewers buy WP points with real UCT, watch videos, and get billed silently in the background. An autonomous agent settles real on-chain payouts to creators twice a day — no wallet popups after the initial buy.
 
----
-
-## What is WatchPay?
-
-WatchPay is a pay-per-30-seconds video watching app built on the Unicity Sphere testnet2.
-Every 30 seconds a viewer watches a video, real UCT is deducted from their in-app wallet and
-queued for settlement. An autonomous agent (scheduled via Upstash QStash) batches and settles
-real on-chain payments to creators every ~5 minutes — no wallet popup per tick.
-
-**UCT Coin ID:** `f581d30f593e4b369d684a4563b5246f07b1d265f7178a2c0a82b81f39c24dc0`
+**Track:** Payments & Markets
+**Network:** Unicity Sphere testnet2 (network ID 4)
+**Live app:** https://watchpay.vercel.app
+**Not using AstridOS.**
 
 ---
 
-## Tech Stack
+## How it works
 
-| Layer        | Technology                          | Cost     |
-|-------------|-------------------------------------|----------|
-| Frontend    | React + Vite + TailwindCSS v4       | Free     |
-| Backend     | Next.js 14 App Router (Vercel)      | Free tier|
-| Database    | Supabase Postgres                   | Free tier|
-| Agent       | Upstash QStash                      | Free tier|
-| Payments    | `@unicitylabs/sphere-sdk@0.10.2`    | Free     |
-| UI Motion   | Framer Motion                       | Free     |
+**1. Buy WP**
+The viewer sends real UCT from their own Sphere wallet to the app's agent wallet (`@watchpay`) via the Sphere Connect `send` intent. Once the transfer is detected on-chain, the backend credits the viewer 1:1 in WP points. WP points live in Supabase (`wp_points`) — they are not a token, just an internal ledger balance backed by real UCT held in `@watchpay`.
 
----
+**2. Watch & Tick**
+While a video plays, a tick fires every 30 seconds. Each tick deducts the video's rate from the viewer's WP balance and adds the same amount to that creator's pending payout total (`pending_settlements`). This is pure database bookkeeping — no blockchain transaction happens per tick, which is what makes silent, popup-free billing possible.
 
-## Agentic Architecture
+**3. Agent Settles**
+Twice daily (00:00 and 12:00 UTC), a QStash-scheduled job calls `/api/agent-settle`. It reads every creator with a pending balance of at least 5 UCT, sends them real UCT directly from `@watchpay` via `sphere.payments.send()`, and logs the transaction (with real `tx_id`) to the `settlements` and `agent_log` tables. This is the fully autonomous part — no user or admin ever triggers it manually.
 
-The autonomous agent consists of two QStash-scheduled jobs:
-
-### 1. Settlement Agent (`POST /api/agent/settle`) — every 5–10 min
-```
-QStash → /api/agent/settle
-  ↓
-Query pending_settlements WHERE amount_owed > 0
-  ↓
-For each creator:
-  sphere.payments.send({ recipient: creator.nametag, amount, coinId: UCT_COIN_ID })
-  ↓
-  result.status === 'completed' → success
-  ↓
-  Reset pending_settlements.amount_owed = 0
-  Insert into settlements (amount, tx_id=result.id, memo)
-  Insert into agent_log (action_type='settlement', details)
-```
-
-### 2. Balance Check Agent (`POST /api/agent/balance-check`) — every 5 min
-```
-QStash → /api/agent/balance-check
-  ↓
-Query active watch_sessions (ended_at IS NULL)
-  JOIN app_wallets.balance
-  JOIN videos.rate_per_30s
-  ↓
-If balance < rate * 3:  → sphere.communications.sendDM('@viewer', 'Top up to continue watching')
-  ↓
-Insert into agent_log (action_type='balance_check', details)
-```
+**4. Sell WP**
+A viewer (or a creator holding leftover WP) can convert WP back to real UCT at any time. The backend sends real UCT from `@watchpay` straight to the user's real Sphere wallet.
 
 ---
 
-## Wallet Architecture (Honest Disclosure)
+## Agentic confirmation
 
-WatchPay uses a **custodial app wallet** per user for silent, uninterrupted billing:
-
-- **App wallet:** Server-side custodial wallet (mnemonic encrypted with AES-256-GCM, stored in Supabase). The agent can sign and send UCT without any user interaction — this enables the "no popup per tick" experience.
-- **Real Sphere wallet:** Stays fully user-controlled. Used ONLY for:
-  - **Login:** Via `autoConnect` / `ConnectClient` (Sphere Connect protocol v2.0)
-  - **Deposit:** User approves a `sphere.intent('send', ...)` from their real wallet to the app wallet
-  - **Withdraw:** Agent sends UCT back to the user's real wallet nametag
-
-This is the honest tradeoff: custodial billing for seamless UX, with the real wallet intact for all value-bearing operations.
+Yes — this project is agentic. The settlement job (`/api/agent-settle`) runs on a fixed QStash schedule with no human in the loop. It independently decides which creators are owed money, signs and broadcasts real transactions, and writes a public, timestamped audit log of everything it does (visible in-app under the **Agent** tab). Every entry in that log corresponds to a real `tx_id` on Unicity Sphere testnet2, verifiable on-chain.
 
 ---
 
-## SDK Methods Used (Confirmed Against Real Repo)
+## Wallet architecture disclosure
 
-All method names verified against https://github.com/unicity-sphere/sphere-sdk:
+WatchPay does **not** create a custodial wallet per user. Instead, it uses a single pooled agent wallet (`@watchpay`) that holds all real UCT:
 
-| Method | Usage |
-|--------|-------|
-| `Sphere.init({ mnemonic, nametag, ...providers })` | Create/load wallet per user |
-| `sphere.payments.send({ recipient, amount, coinId, memo })` | Settlement payments |
-| `sphere.payments.getAssets()` | Balance verification (on-chain) |
-| `sphere.payments.mintFungibleToken(coinId, amount)` | Testnet self-mint (faucet alternative) |
-| `sphere.registerNametag(name)` | Register app wallet nametag |
-| `sphere.communications.sendDM('@user', msg)` | Low-balance DM alerts |
-| `autoConnect({ dapp, walletUrl, network: SPHERE_NETWORKS.testnet2 })` | Browser login |
-| `client.intent('send', { to, amount, coinId })` | Deposit intent |
-| `client.query('sphere_getBalance')` | Read real wallet balance |
+- **Deposit (Buy WP):** user's real Sphere wallet → `@watchpay` (real on-chain transfer, user-signed).
+- **Watching:** pure ledger math against the user's WP balance in Supabase — no chain interaction.
+- **Withdraw (Sell WP) / Creator payout:** `@watchpay` → user's real Sphere wallet (real on-chain transfer, signed server-side using the agent wallet's mnemonic, stored only in Vercel environment variables).
+
+This is an intentional design decision, not a workaround: real UCT only ever moves twice per user lifecycle (once in, once out), which is both simpler and cheaper than minting or managing a wallet per user, while remaining fully transparent — anyone can verify `@watchpay`'s on-chain balance always covers total outstanding WP liabilities.
 
 ---
 
-## Provider Setup (Node.js server-side)
+## Tech stack
 
-```typescript
-import { Sphere } from '@unicitylabs/sphere-sdk';
-import { createNodeProviders } from '@unicitylabs/sphere-sdk/impl/nodejs';
-import { createWalletApiProviders } from '@unicitylabs/sphere-sdk/impl/shared/wallet-api';
+- **Frontend:** React + Vite, Tailwind, Framer Motion
+- **Backend:** Vercel serverless functions (Node/TypeScript)
+- **Database:** Supabase Postgres
+- **Blockchain SDK:** `@unicitylabs/sphere-sdk` (wallet-api custody mode, since Vercel's serverless filesystem is ephemeral and cannot persist local wallet state between invocations)
+- **Scheduler:** Upstash QStash (cron: `0 0,12 * * *`)
+- **Network:** Unicity Sphere testnet2
 
-const base = createNodeProviders({
-  network: 'testnet',                                    // = testnet2 (networkId 4)
-  dataDir: `./wallet-data/${userId}`,
-  tokensDir: `./tokens-data/${userId}`,
-  oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' }, // public testnet2 key
-});
-
-const providers = createWalletApiProviders(base, {
-  baseUrl: 'https://wallet-api.unicity.network',
-  network: 'testnet2',
-  deviceId: `watchpay-${userId}`,
-});
-
-const { sphere } = await Sphere.init({ ...providers, mnemonic, autoGenerate: true });
-```
+UCT coin ID (hardcoded, verified):
+`f581d30f593e4b369d684a4563b5246f07b1d265f7178a2c0a82b81f39c24dc0`
 
 ---
 
-## Environment Variables
-
-```env
-NEXT_PUBLIC_SPHERE_NETWORK=testnet2
-SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
-QSTASH_TOKEN=
-QSTASH_CURRENT_SIGNING_KEY=
-WALLET_ENCRYPTION_SECRET=          # 32-byte hex for AES-256-GCM
-```
-
----
-
-## Run Locally (Against Testnet2)
+## Running it locally
 
 ```bash
-# Install
 npm install
+```
 
-# Start dev server (Vite frontend demo)
+Create `.env.local` with:
+```
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+AGENT_WALLET_MNEMONIC=
+AGENT_SECRET=
+```
+
+```bash
 npm run dev
-
-# For the full Next.js backend:
-# 1. Copy .env.local.example → .env.local, fill values
-# 2. Set up Supabase: run db/schema.sql in the SQL editor
-# 3. Set up QStash: run lib/qstash.ts to register schedules
-# 4. Start: next dev
-# 5. Get test UCT: sphere.payments.mintFungibleToken(UCT_COIN_ID, 1000n)
-#    Or: sphere topup 10 UCT (CLI)
 ```
 
----
-
-## Test Tokens
-
-On testnet2 there is no external faucet needed. Self-mint via the v2 token engine:
-```typescript
-const result = await sphere.payments.mintFungibleToken(UCT_COIN_ID, 1000n);
-// Or via CLI: sphere topup 10 UCT
-```
-
-External faucet (for reference): https://faucet.unicity.network/faucet/
+Get testnet UCT from the official faucet: https://faucet.unicity.network/faucet/ — no balances are ever fabricated; every number shown in the app is either a real on-chain value or a real Supabase row written by a real action.
 
 ---
 
-## Submission Checklist
+## Database schema (Supabase)
 
-- [x] Public repo with readable code
-- [x] Live at public HTTPS URL (Vercel deployment)
-- [x] Track: **Payments and Markets**
-- [x] Agentic: YES — QStash-scheduled settlement + balance-check agents
-- [x] AstridOS: NOT USED
-- [x] Real UCT (not mocked) — all balances from on-chain via `sphere.payments.getAssets()`
-- [x] Wallet architecture disclosed (custodial app wallet + user-controlled real wallet)
-- [x] All SDK methods verified against https://github.com/unicity-sphere/sphere-sdk
-- [x] UCT Coin ID hardcoded: `f581d30f593e4b369d684a4563b5246f07b1d265f7178a2c0a82b81f39c24dc0`
+- `wp_points` — viewer WP balances, keyed by chain pubkey
+- `wp_deposits_seen` — dedup table so a single on-chain transfer is never credited twice
+- `videos` — uploaded video metadata (title, url, rate, category, creator)
+- `watch_sessions` — one row per watch session, closed on player exit
+- `video_earnings` — running per-video earnings total, for the creator's per-video breakdown view
+- `pending_settlements` — running total owed per creator, reset to 0 after each successful payout
+- `settlements` — permanent record of every real payout (amount, real `tx_id`, timestamp)
+- `agent_log` — public audit trail of every agent action
 
 ---
 
-## License
+## Known limitations
 
-MIT
+- No balance-check/low-balance-warning agent — only the settlement agent is built.
+- Video duration is not fetched from source metadata; the duration badge is hidden rather than faked.
+- Thumbnails are placeholder images, not extracted from the actual video source.
+- No in-place video editing — creators delete and re-upload to change details.

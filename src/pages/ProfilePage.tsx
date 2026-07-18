@@ -422,11 +422,11 @@ export function ProfilePage() {
             HOW WATCHPAY WORKS
           </div>
           <div className="space-y-4">
-            {[
-              { step: '01', title: 'Deposit UCT', desc: 'Send UCT from your real Sphere wallet to your app wallet via the Sphere Connect "send" intent. On-chain confirmation required.' },
-              { step: '02', title: 'Watch & Tick', desc: 'Every 30s a tick fires. Your app wallet balance decreases by the video rate. No wallet popup — the agent handles it.' },
-              { step: '03', title: 'Agent Settles', desc: 'Every ~5 min, the autonomous agent batches pending amounts and calls sphere.payments.send() to pay creators. Real TX on testnet2.' },
-              { step: '04', title: 'Withdraw Anytime', desc: 'The agent calls sendUCT() to move your remaining balance back to your real Sphere wallet nametag.' },
+           {[
+              { step: '01', title: 'Buy WP', desc: 'Send real UCT from your Sphere wallet to @watchpay. You receive WP 1:1 — no wallet popup needed after this one-time send.' },
+              { step: '02', title: 'Watch & Tick', desc: 'Every 60s a tick fires while watching. Your WP balance decreases by the video rate. No wallet popup — the agent handles it.' },
+              { step: '03', title: 'Agent Settles', desc: 'Twice daily (00:00 and 12:00 UTC), the agent pays creators whose pending balance is at least 5 UCT via sphere.payments.send(). Real TX on testnet2.' },
+              { step: '04', title: 'Sell WP', desc: 'Convert your remaining WP back to real UCT anytime — sent directly to your real Sphere wallet.' },
             ].map((item, i) => (
               <motion.div
                 key={item.step}

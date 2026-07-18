@@ -149,12 +149,10 @@ export function CustomCursor() {
   useEffect(() => {
     const move = (e: MouseEvent) => {
       if (cursorRef.current) {
-        cursorRef.current.style.left = `${e.clientX - 10}px`;
-        cursorRef.current.style.top = `${e.clientY - 10}px`;
+        cursorRef.current.style.transform = `translate3d(${e.clientX - 10}px, ${e.clientY - 10}px, 0)`;
       }
       if (dotRef.current) {
-        dotRef.current.style.left = `${e.clientX - 3}px`;
-        dotRef.current.style.top = `${e.clientY - 3}px`;
+        dotRef.current.style.transform = `translate3d(${e.clientX - 3}px, ${e.clientY - 3}px, 0)`;
       }
     };
     window.addEventListener('mousemove', move);

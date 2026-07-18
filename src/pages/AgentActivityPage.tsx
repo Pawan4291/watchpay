@@ -301,8 +301,8 @@ export function AgentActivityPage() {
               <Zap size={12} style={{ color: '#ff6b00' }} />
               <strong style={{ color: '#888' }}>Settlement Agent</strong>
             </div>
-            <p>Triggered every 5–10 min by QStash. Queries <code style={{ color: '#ff6b0066' }}>pending_settlements</code>, 
-            calls <code style={{ color: '#ff6b0066' }}>sphere.payments.send()</code> for each creator.
+            <p>Triggered twice daily (00:00 and 12:00 UTC) by QStash. Queries <code style={{ color: '#ff6b0066' }}>pending_settlements</code>, 
+            calls <code style={{ color: '#ff6b0066' }}>sphere.payments.send()</code> for each creator at or above the 5 UCT threshold.
             Logs real <code style={{ color: '#ff6b0066' }}>tx_id</code> from the SDK response.</p>
           </div>
           <div>

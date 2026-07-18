@@ -29,7 +29,7 @@ export function WalletCard() {
     try {
       const res = await depositUCT(amt);
       if (res.success) {
-        setStatus({ type: 'buy', txId: res.txId || 'pending confirmation' });
+        setStatus({ type: 'buy', txId: res.txId || 'Credited' });
         setAmount('');
         setMode(null);
       }

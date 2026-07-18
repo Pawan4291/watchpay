@@ -264,19 +264,19 @@ function AppShell() {
             <div className="flex items-center gap-3">
               <span className="font-orbitron font-bold" style={{ color: '#ff6b00' }}>WATCHPAY</span>
               <span style={{ color: '#333' }}>—</span>
-              <span style={{ color: '#333' }}>Unicity Sphere Hackathon · Payments & Markets Track</span>
+              <span style={{ color: '#333' }}>Pay-per-30-seconds video watching, powered by an autonomous settlement agent</span>
             </div>
             <div className="flex items-center gap-4" style={{ color: '#333' }}>
               <span className="font-orbitron" style={{ fontSize: '0.6rem', letterSpacing: '0.1em' }}>
-                UCT: f581d30f...24dc0
+                UCT ON UNICITY SPHERE TESTNET2
               </span>
               <span>·</span>
               <span className="font-orbitron" style={{ fontSize: '0.6rem', letterSpacing: '0.1em' }}>
-                TESTNET2 · NET ID 4
+                REAL ON-CHAIN SETTLEMENTS
               </span>
               <span>·</span>
               <span className="font-orbitron" style={{ fontSize: '0.6rem', letterSpacing: '0.1em' }}>
-                NOT USING ASTRID OS
+                BUILT WITH SUPABASE + QSTASH
               </span>
             </div>
           </div>

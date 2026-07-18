@@ -222,7 +222,7 @@ export function WatchPage() {
             </span>
           </div>
           <div className="text-xs" style={{ color: '#444' }}>
-            Agent settling every 5 min · Real UCT on testnet2
+            Agent settles twice daily · Real UCT on testnet2
           </div>
         </div>
 

@@ -29,10 +29,12 @@ body {
   border: 2px solid #ff6b00;
   border-radius: 50%;
   position: fixed;
+  top: 0;
+  left: 0;
   pointer-events: none;
   z-index: 99999;
-  transition: transform 0.1s ease, opacity 0.3s ease;
   mix-blend-mode: difference;
+  will-change: transform;
 }
 
 .cursor-dot {
@@ -41,9 +43,11 @@ body {
   background: #ff6b00;
   border-radius: 50%;
   position: fixed;
+  top: 0;
+  left: 0;
   pointer-events: none;
   z-index: 99999;
-  transition: transform 0.05s ease;
+  will-change: transform;
 }
 
 /* Scrollbar */

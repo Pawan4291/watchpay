@@ -188,9 +188,10 @@ export async function depositUCT(amount: number): Promise<{ success: boolean; tx
       setStore({
         wallet: { ...storeState.wallet, balance: storeState.wallet.balance + check.credited, lastUpdated: new Date().toISOString() },
       });
+      return { success: true, txId: `${check.credited} WP credited` };
     }
 
-    return { success: true, txId: result.txId };
+    return { success: false };
   } catch (err) {
     console.error('[WatchPay] depositUCT failed:', err);
     return { success: false };
