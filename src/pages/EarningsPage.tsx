@@ -103,6 +103,20 @@ export function EarningsPage() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
+        className="mb-8 p-5 rounded-xl flex items-center justify-between"
+        style={{ background: 'rgba(0,255,136,0.05)', border: '1px solid rgba(0,255,136,0.2)' }}
+      >
+        <div className="font-orbitron text-xs" style={{ color: '#00ff8888', letterSpacing: '0.1em' }}>
+          TOTAL EARNED (ALL TIME)
+        </div>
+        <div className="font-orbitron text-2xl font-bold" style={{ color: '#00ff88' }}>
+          {formatNum(totalEarned)} UCT
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
         className="mb-8 p-6 rounded-xl"
         style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}
       >
