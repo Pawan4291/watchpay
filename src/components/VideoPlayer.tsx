@@ -70,7 +70,25 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
     };
   }, [isPlaying, handleTick]);
 
+  // Detect real YouTube video end via postMessage (YT IFrame API state: 0 = ended)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (!event.origin.includes('youtube.com')) return;
+      try {
+        const data = JSON.parse(event.data);
+        if (data.event === 'onStateChange' && data.info === 0) {
+          handleClose();
+        }
+      } catch {
+        // not a JSON message, ignore
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   const handlePlay = () => {
+    
     if (!user) {
       setTickMessage({ type: 'error', text: 'Connect your wallet to watch' });
       return;
@@ -187,7 +205,8 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
 
           {isPlaying && isEmbed && (
             <iframe
-              src={`${video.url}${video.url.includes('?') ? '&' : '?'}autoplay=1&mute=${isMuted ? 1 : 0}`}
+              id="watchpay-yt-frame"
+              src={`${video.url}${video.url.includes('?') ? '&' : '?'}autoplay=1&mute=${isMuted ? 1 : 0}&enablejsapi=1`}
               className="absolute inset-0 w-full h-full"
               style={{ border: 'none' }}
               allow="autoplay; encrypted-media"
@@ -248,15 +267,17 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
             )}
 
             <div className="flex items-center gap-3">
-              <motion.button
-                onClick={isPlaying ? handlePause : handlePlay}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="p-2 rounded-lg"
-                style={{ background: isPlaying ? 'rgba(255,107,0,0.2)' : 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.3)' }}
-              >
-                {isPlaying ? <Pause size={18} style={{ color: '#ff6b00' }} /> : <Play size={18} style={{ color: '#ff6b00' }} />}
-              </motion.button>
+              {isPlaying && (
+                <motion.button
+                  onClick={handlePause}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-2 rounded-lg"
+                  style={{ background: 'rgba(255,107,0,0.2)', border: '1px solid rgba(255,107,0,0.3)' }}
+                >
+                  <Pause size={18} style={{ color: '#ff6b00' }} />
+                </motion.button>
+              )}
 
               <motion.button
                 onClick={() => setIsMuted(!isMuted)}
