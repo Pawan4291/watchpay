@@ -25,6 +25,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
   const tickIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const isEmbed = video.url.includes('youtube.com') || video.url.includes('vimeo.com');
+  const ytPlayerRef = useRef<any>(null);
 
   const handleTick = useCallback(() => {
     if (!user) return;
@@ -71,24 +72,42 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
     };
   }, [isActuallyPlaying, handleTick]);
 
-  // Track real YouTube playback state: 1 = playing, 2 = paused, 0 = ended
+  // Load the real YouTube IFrame API and create a proper player instance
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (!event.origin.includes('youtube.com')) return;
-      try {
-        const data = JSON.parse(event.data);
-        if (data.event === 'onStateChange') {
-          if (data.info === 1) setIsActuallyPlaying(true);
-          if (data.info === 2) setIsActuallyPlaying(false);
-          if (data.info === 0) handleClose();
-        }
-      } catch {
-        // not a JSON message, ignore
-      }
+    if (!isPlaying || !isEmbed) return;
+
+    const ytIdMatch = video.url.match(/embed\/([a-zA-Z0-9_-]{11})/);
+    const videoId = ytIdMatch?.[1];
+    if (!videoId) return;
+
+    const createPlayer = () => {
+      ytPlayerRef.current = new (window as any).YT.Player('watchpay-yt-frame', {
+        videoId,
+        playerVars: { autoplay: 1, mute: 1, enablejsapi: 1 },
+        events: {
+          onStateChange: (e: any) => {
+            if (e.data === 1) setIsActuallyPlaying(true); // playing
+            if (e.data === 2) setIsActuallyPlaying(false); // paused
+            if (e.data === 0) handleClose(); // ended
+          },
+        },
+      });
     };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
+
+    if ((window as any).YT && (window as any).YT.Player) {
+      createPlayer();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://www.youtube.com/iframe_api';
+      document.body.appendChild(script);
+      (window as any).onYouTubeIframeAPIReady = createPlayer;
+    }
+
+    return () => {
+      ytPlayerRef.current?.destroy?.();
+      ytPlayerRef.current = null;
+    };
+  }, [isPlaying, isEmbed, video.url]);
 
   const handlePlay = () => {
     if (!user) {
@@ -110,10 +129,8 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
     // Ticking only starts once isActuallyPlaying becomes true via the real YT state event above
   };
 
-  const handlePause = () => {
-    const frame = document.getElementById('watchpay-yt-frame') as HTMLIFrameElement | null;
-    frame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
-    // isActuallyPlaying will flip to false via the real onStateChange(2) event, stopping ticks
+ const handlePause = () => {
+    ytPlayerRef.current?.pauseVideo?.();
   };
 
   const handleClose = () => {
@@ -210,14 +227,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
           )}
 
           {isPlaying && isEmbed && (
-            <iframe
-              id="watchpay-yt-frame"
-              src={`${video.url}${video.url.includes('?') ? '&' : '?'}autoplay=1&mute=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`}
-              className="absolute inset-0 w-full h-full"
-              style={{ border: 'none' }}
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-            />
+            <div id="watchpay-yt-frame" className="absolute inset-0 w-full h-full" />
           )}
           {isPlaying && !isEmbed && (
             <video
@@ -279,8 +289,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
                     if (isActuallyPlaying) {
                       handlePause();
                     } else {
-                      const frame = document.getElementById('watchpay-yt-frame') as HTMLIFrameElement | null;
-                      frame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+                      ytPlayerRef.current?.playVideo?.();
                     }
                   }}
                   whileHover={{ scale: 1.05 }}
