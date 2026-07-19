@@ -88,7 +88,6 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
   }, []);
 
   const handlePlay = () => {
-    
     if (!user) {
       setTickMessage({ type: 'error', text: 'Connect your wallet to watch' });
       return;
@@ -105,6 +104,19 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
 
     setIsPlaying(true);
     setInsufficientBalance(false);
+
+    // Force real playback + unmute via YouTube IFrame API once the frame is ready
+    if (isEmbed) {
+      setTimeout(() => {
+        const frame = document.getElementById('watchpay-yt-frame') as HTMLIFrameElement | null;
+        frame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+        if (!isMuted) {
+          setTimeout(() => {
+            frame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
+          }, 300);
+        }
+      }, 500);
+    }
   };
 
   const handlePause = () => {
@@ -206,7 +218,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
           {isPlaying && isEmbed && (
             <iframe
               id="watchpay-yt-frame"
-              src={`${video.url}${video.url.includes('?') ? '&' : '?'}autoplay=1&mute=${isMuted ? 1 : 0}&enablejsapi=1`}
+              src={`${video.url}${video.url.includes('?') ? '&' : '?'}autoplay=1&mute=1&enablejsapi=1`}
               className="absolute inset-0 w-full h-full"
               style={{ border: 'none' }}
               allow="autoplay; encrypted-media"
