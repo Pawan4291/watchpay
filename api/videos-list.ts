@@ -16,7 +16,9 @@ export default async function handler(_req: any, res: any) {
       id: v.id,
       title: v.title,
       url: v.url,
-      thumbnail: `https://picsum.photos/seed/${v.id}/640/360`,
+      thumbnail: v.url && v.url.includes('youtube.com/embed/')
+        ? `https://img.youtube.com/vi/${v.url.match(/embed\/([a-zA-Z0-9_-]{11})/)?.[1]}/hqdefault.jpg`
+        : `https://picsum.photos/seed/${v.id}/640/360`,
       creator: `@${v.creator_nametag}`,
       creator_id: v.creator_chain_pubkey,
       rate_per_30s: Number(v.rate_per_30s),
