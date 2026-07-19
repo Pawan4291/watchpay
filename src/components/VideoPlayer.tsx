@@ -12,7 +12,8 @@ interface VideoPlayerProps {
 
 export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
   const { wallet, currentSession, user } = useStore();
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false); // controls UI/session, video frame stays mounted
+  const [isActuallyPlaying, setIsActuallyPlaying] = useState(false); // gates real ticking — only true when YT confirms playback
   const [isMuted, setIsMuted] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [totalWatched, setTotalWatched] = useState(0);
@@ -46,7 +47,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
   }, [user, video.rate_per_30s, video.creator]);
 
   useEffect(() => {
-    if (isPlaying) {
+    if (isActuallyPlaying) {
       intervalRef.current = setInterval(() => {
         setElapsed(n => {
           const next = n + 1;
@@ -68,16 +69,18 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (tickIntervalRef.current) clearInterval(tickIntervalRef.current);
     };
-  }, [isPlaying, handleTick]);
+  }, [isActuallyPlaying, handleTick]);
 
-  // Detect real YouTube video end via postMessage (YT IFrame API state: 0 = ended)
+  // Track real YouTube playback state: 1 = playing, 2 = paused, 0 = ended
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (!event.origin.includes('youtube.com')) return;
       try {
         const data = JSON.parse(event.data);
-        if (data.event === 'onStateChange' && data.info === 0) {
-          handleClose();
+        if (data.event === 'onStateChange') {
+          if (data.info === 1) setIsActuallyPlaying(true);
+          if (data.info === 2) setIsActuallyPlaying(false);
+          if (data.info === 0) handleClose();
         }
       } catch {
         // not a JSON message, ignore
@@ -104,27 +107,18 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
 
     setIsPlaying(true);
     setInsufficientBalance(false);
-
-    // Force real playback + unmute via YouTube IFrame API once the frame is ready
-    if (isEmbed) {
-      setTimeout(() => {
-        const frame = document.getElementById('watchpay-yt-frame') as HTMLIFrameElement | null;
-        frame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
-        if (!isMuted) {
-          setTimeout(() => {
-            frame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
-          }, 300);
-        }
-      }, 500);
-    }
+    // Ticking only starts once isActuallyPlaying becomes true via the real YT state event above
   };
 
   const handlePause = () => {
-    setIsPlaying(false);
+    const frame = document.getElementById('watchpay-yt-frame') as HTMLIFrameElement | null;
+    frame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+    // isActuallyPlaying will flip to false via the real onStateChange(2) event, stopping ticks
   };
 
   const handleClose = () => {
     setIsPlaying(false);
+    setIsActuallyPlaying(false);
     endWatchSession();
     onClose();
   };
@@ -218,7 +212,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
           {isPlaying && isEmbed && (
             <iframe
               id="watchpay-yt-frame"
-              src={`${video.url}${video.url.includes('?') ? '&' : '?'}autoplay=1&mute=1&enablejsapi=1`}
+              src={`${video.url}${video.url.includes('?') ? '&' : '?'}autoplay=1&mute=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`}
               className="absolute inset-0 w-full h-full"
               style={{ border: 'none' }}
               allow="autoplay; encrypted-media"
@@ -281,13 +275,20 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
             <div className="flex items-center gap-3">
               {isPlaying && (
                 <motion.button
-                  onClick={handlePause}
+                  onClick={() => {
+                    if (isActuallyPlaying) {
+                      handlePause();
+                    } else {
+                      const frame = document.getElementById('watchpay-yt-frame') as HTMLIFrameElement | null;
+                      frame?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+                    }
+                  }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="p-2 rounded-lg"
                   style={{ background: 'rgba(255,107,0,0.2)', border: '1px solid rgba(255,107,0,0.3)' }}
                 >
-                  <Pause size={18} style={{ color: '#ff6b00' }} />
+                  {isActuallyPlaying ? <Pause size={18} style={{ color: '#ff6b00' }} /> : <Play size={18} style={{ color: '#ff6b00' }} />}
                 </motion.button>
               )}
 
