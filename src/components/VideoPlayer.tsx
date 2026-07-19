@@ -26,6 +26,8 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
 
   const isEmbed = video.url.includes('youtube.com') || video.url.includes('vimeo.com');
   const ytPlayerRef = useRef<any>(null);
+  const ytContainerRef = useRef<HTMLDivElement>(null);
+  const ytMountRef = useRef<HTMLDivElement | null>(null);
 
   const handleTick = useCallback(() => {
     if (!user) return;
@@ -74,21 +76,27 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
 
   // Load the real YouTube IFrame API and create a proper player instance
   useEffect(() => {
-    if (!isPlaying || !isEmbed) return;
+    if (!isPlaying || !isEmbed || !ytContainerRef.current) return;
 
     const ytIdMatch = video.url.match(/embed\/([a-zA-Z0-9_-]{11})/);
     const videoId = ytIdMatch?.[1];
     if (!videoId) return;
 
+    // Create a mount point YT owns exclusively — React never touches this node again
+    const mountEl = document.createElement('div');
+    ytContainerRef.current.appendChild(mountEl);
+    ytMountRef.current = mountEl;
+
     const createPlayer = () => {
-      ytPlayerRef.current = new (window as any).YT.Player('watchpay-yt-frame', {
+      if (!ytMountRef.current) return;
+      ytPlayerRef.current = new (window as any).YT.Player(ytMountRef.current, {
         videoId,
         playerVars: { autoplay: 1, mute: 1, enablejsapi: 1 },
         events: {
           onStateChange: (e: any) => {
-            if (e.data === 1) setIsActuallyPlaying(true); // playing
-            if (e.data === 2) setIsActuallyPlaying(false); // paused
-            if (e.data === 0) handleClose(); // ended
+            if (e.data === 1) setIsActuallyPlaying(true);
+            if (e.data === 2) setIsActuallyPlaying(false);
+            if (e.data === 0) handleClose();
           },
         },
       });
@@ -104,8 +112,17 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
     }
 
     return () => {
-      ytPlayerRef.current?.destroy?.();
+      try {
+        ytPlayerRef.current?.destroy?.();
+      } catch {
+        // player already gone, ignore
+      }
       ytPlayerRef.current = null;
+      // Manually remove our own mount node, not letting React or YT fight over it
+      if (ytMountRef.current && ytMountRef.current.parentNode) {
+        ytMountRef.current.parentNode.removeChild(ytMountRef.current);
+      }
+      ytMountRef.current = null;
     };
   }, [isPlaying, isEmbed, video.url]);
 
@@ -227,7 +244,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
           )}
 
           {isPlaying && isEmbed && (
-            <div id="watchpay-yt-frame" className="absolute inset-0 w-full h-full" />
+            <div ref={ytContainerRef} className="absolute inset-0 w-full h-full" />
           )}
           {isPlaying && !isEmbed && (
             <video

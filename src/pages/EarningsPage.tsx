@@ -19,21 +19,23 @@ export function EarningsPage() {
   const [settlements, setSettlements] = useState<Array<{ id: string; amount: number; tx_id: string; memo: string; timestamp: string }>>([]);
   const [pendingAmount, setPendingAmount] = useState(0);
   const [videoEarnings, setVideoEarnings] = useState<Array<{ video_id: string; title: string; total_earned: number }>>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
- const refetchAll = () => {
+  const refetchAll = async () => {
     if (!user) return;
-    fetch(`/api/settlements?creator_id=${user.id}`, { cache: 'no-store' })
-      .then(r => r.json())
-      .then(setSettlements)
-      .catch(() => {});
-    fetch(`/api/pending-for-creator?creator_id=${user.id}`, { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => setPendingAmount(d.amount_owed ?? 0))
-      .catch(() => {});
-    fetch(`/api/video-earnings?creator_id=${user.id}`, { cache: 'no-store' })
-      .then(r => r.json())
-      .then(setVideoEarnings)
-      .catch(() => {});
+    setRefreshing(true);
+    try {
+      const [s, p, v] = await Promise.all([
+        fetch(`/api/settlements?creator_id=${user.id}`, { cache: 'no-store' }).then(r => r.json()).catch(() => []),
+        fetch(`/api/pending-for-creator?creator_id=${user.id}`, { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
+        fetch(`/api/video-earnings?creator_id=${user.id}`, { cache: 'no-store' }).then(r => r.json()).catch(() => []),
+      ]);
+      setSettlements(s);
+      setPendingAmount(p.amount_owed ?? 0);
+      setVideoEarnings(v);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {
@@ -65,10 +67,11 @@ export function EarningsPage() {
           </p>
           <button
             onClick={refetchAll}
+            disabled={refreshing}
             className="px-3 py-1.5 rounded-lg font-orbitron text-xs"
-            style={{ background: '#111', border: '1px solid #2a2a2a', color: '#888', cursor: 'pointer' }}
+            style={{ background: '#111', border: '1px solid #2a2a2a', color: refreshing ? '#ff6b00' : '#888', cursor: refreshing ? 'wait' : 'pointer' }}
           >
-            ↻ REFRESH
+            {refreshing ? '↻ REFRESHING...' : '↻ REFRESH'}
           </button>
         </div>
       </motion.div>
