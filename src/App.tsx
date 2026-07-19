@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import logo from './assets/watchpay-logo.png';
 import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedBackground, CustomCursor } from './components/AnimatedBackground';
@@ -85,10 +86,9 @@ function SplashScreen({ onEnter }: { onEnter: () => void }) {
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3, type: 'spring', damping: 20 }}
-          className="absolute inset-0 flex items-center justify-center font-orbitron font-black text-2xl"
-          style={{ color: '#ff6b00' }}
+          className="absolute inset-0 flex items-center justify-center"
         >
-          W
+          <img src={logo} alt="WatchPay" style={{ width: 60, height: 60 }} />
         </motion.div>
       </div>
 

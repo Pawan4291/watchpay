@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Tv, Upload, User, DollarSign, Activity, Zap, Wallet } from 'lucide-react';
+import logo from '../assets/watchpay-logo.png';
 import { useStore, loginWithSphere, disconnectWallet } from '../lib/store';
 
 type Tab = 'watch' | 'upload' | 'profile' | 'earnings' | 'agent-activity';
@@ -48,10 +49,11 @@ export function Nav({ activeTab, onTabChange, isLoggedIn }: NavProps) {
                 className="w-8 h-8 rounded-full border border-orange-500/30"
                 style={{ borderTopColor: '#ff6b00' }}
               />
-              <Zap
+              <img
+                src={logo}
+                alt="WatchPay"
                 className="absolute inset-0 m-auto"
-                size={14}
-                style={{ color: '#ff6b00' }}
+                style={{ width: 18, height: 18 }}
               />
             </div>
             <div>
