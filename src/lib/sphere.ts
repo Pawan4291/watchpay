@@ -367,7 +367,7 @@ async function baseConnect(silent: boolean) {
       'width=420,height=650'
     );
     if (!popup) throw new Error('Popup blocked. Please allow popups for this site.');
-    transport = PostMessageTransport.forClient({ target: popup, targetOrigin: SPHERE_WALLET_URL });
+    transport = PostMessageTransport.forClient({ target: popup, targetOrigin: '*' });
   }
 
   const savedSession = sessionStorage.getItem(SESSION_KEY);
