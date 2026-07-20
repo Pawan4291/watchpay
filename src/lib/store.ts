@@ -70,7 +70,12 @@ export async function loginWithSphere(): Promise<void> {
   setStore({ isConnecting: true });
   try {
     const { connectRealWallet } = await import('./sphere');
-    const { identity, client } = await connectRealWallet();
+
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Connect timed out after 30s — popup may have been closed or blocked')), 30000)
+    );
+
+    const { identity, client } = await Promise.race([connectRealWallet(), timeout]);
     setStore({ sphereClient: client });
     await finishLogin(identity);
   } catch (err) {
