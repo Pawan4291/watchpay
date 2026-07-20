@@ -91,6 +91,8 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
       if (!ytMountRef.current) return;
       ytPlayerRef.current = new (window as any).YT.Player(ytMountRef.current, {
         videoId,
+        width: '100%',
+        height: '100%',
         playerVars: { autoplay: 1, mute: 1, enablejsapi: 1 },
         events: {
           onStateChange: (e: any) => {
@@ -244,7 +246,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
           )}
 
           {isPlaying && isEmbed && (
-            <div ref={ytContainerRef} className="absolute inset-0 w-full h-full" />
+            <div ref={ytContainerRef} className="absolute inset-0 w-full h-full yt-player-fill" style={{ overflow: 'hidden' }} />
           )}
           {isPlaying && !isEmbed && (
             <video
