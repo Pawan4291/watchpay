@@ -350,12 +350,17 @@ async function baseConnect(silent: boolean) {
   const dapp = { name: 'WatchPay', description: 'Pay-per-30-seconds video watching on Unicity Sphere', url: window.location.origin };
   const permissions = ['identity:read', 'balance:read', 'transfer:request', 'sign:request'];
 
+  console.log('[WatchPay] connect env check — isInIframe:', isInIframe(), 'hasExtension:', hasExtension());
+
   let transport;
   if (isInIframe()) {
+    console.log('[WatchPay] using PostMessageTransport (iframe)');
     transport = PostMessageTransport.forClient({ target: window.parent, targetOrigin: '*' });
   } else if (hasExtension()) {
+    console.log('[WatchPay] using ExtensionTransport (browser extension)');
     transport = ExtensionTransport.forClient();
   } else {
+    console.log('[WatchPay] using popup transport (fallback)');
     const popup = window.open(
       `${SPHERE_WALLET_URL}/connect?origin=${encodeURIComponent(window.location.origin)}`,
       'sphere-wallet',
