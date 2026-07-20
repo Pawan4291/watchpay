@@ -335,54 +335,25 @@ export async function getBalance(mnemonic: string): Promise<BalanceAsset[]> {
  */
 const SESSION_KEY = 'watchpay-sphere-session';
 
-function isInIframe(): boolean {
-  try { return window.self !== window.top; } catch { return true; }
-}
-
-function hasExtension(): boolean {
-  return typeof (window as any).sphereExtension !== 'undefined';
-}
-
 async function baseConnect(silent: boolean) {
-  const { ConnectClient, SPHERE_NETWORKS } = await import('@unicitylabs/sphere-sdk/connect');
-  const { PostMessageTransport, ExtensionTransport } = await import('@unicitylabs/sphere-sdk/connect/browser');
+  const { autoConnect } = await import('@unicitylabs/sphere-sdk/connect/browser');
 
   const dapp = { name: 'WatchPay', description: 'Pay-per-30-seconds video watching on Unicity Sphere', url: window.location.origin };
   const permissions = ['identity:read', 'balance:read', 'transfer:request', 'sign:request'];
 
-  console.log('[WatchPay] connect env check — isInIframe:', isInIframe(), 'hasExtension:', hasExtension());
-
-  let transport;
-  if (isInIframe()) {
-    console.log('[WatchPay] using PostMessageTransport (iframe)');
-    transport = PostMessageTransport.forClient({ target: window.parent, targetOrigin: '*' });
-  } else if (hasExtension()) {
-    console.log('[WatchPay] using ExtensionTransport (browser extension)');
-    transport = ExtensionTransport.forClient();
-  } else {
-    console.log('[WatchPay] using popup transport (fallback)');
-    const popup = window.open(
-      `${SPHERE_WALLET_URL}/connect?origin=${encodeURIComponent(window.location.origin)}`,
-      'sphere-wallet',
-      'width=420,height=650'
-    );
-    if (!popup) throw new Error('Popup blocked. Please allow popups for this site.');
-    transport = PostMessageTransport.forClient({ target: popup, targetOrigin: '*' });
-  }
-
   const savedSession = sessionStorage.getItem(SESSION_KEY);
-  const client = new ConnectClient({
-    transport,
+
+  const result = await autoConnect({
     dapp,
-    network: SPHERE_NETWORKS.testnet2,
-    silent,
+    walletUrl: SPHERE_WALLET_URL,
     permissions,
+    silent,
     resumeSessionId: savedSession ?? undefined,
   } as any);
+console.log('[WatchPay] autoConnect result:', result);
 
-  const result = await client.connect();
-  sessionStorage.setItem(SESSION_KEY, result.sessionId);
-  return { client, identity: result.identity as ConnectIdentity };
+  sessionStorage.setItem(SESSION_KEY, result.connection.sessionId);
+  return { client: result.client, identity: result.connection.identity as ConnectIdentity };
 }
 
 export async function trySilentConnect(): Promise<{ identity: ConnectIdentity } | null> {
