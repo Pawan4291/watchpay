@@ -343,9 +343,10 @@ async function baseConnect(silent: boolean) {
 
   const savedSession = sessionStorage.getItem(SESSION_KEY);
 
-  const result = await autoConnect({
+ const result = await autoConnect({
     dapp,
     walletUrl: SPHERE_WALLET_URL,
+    network: { id: 4, name: 'testnet2' },
     permissions,
     silent,
     resumeSessionId: savedSession ?? undefined,
