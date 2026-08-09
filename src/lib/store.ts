@@ -125,7 +125,7 @@ export function startWatchSession(videoId: string): WatchSession {
   };
   setStore({ currentSession: session });
 
-  fetch('/api/session-start', {
+  fetch('/api/session?action=start', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chainPubkey: storeState.user?.id, videoId }),
@@ -165,7 +165,7 @@ export function endWatchSession(): void {
   const session = storeState.currentSession;
   setStore({ currentSession: { ...session, active: false } });
 
-  fetch('/api/session-end', {
+  fetch('/api/session?action=end', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chainPubkey: storeState.user?.id, videoId: session.videoId }),
