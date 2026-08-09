@@ -21,7 +21,7 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ settled: 0, message: 'nothing pending' });
     }
 
-    const base = createNodeProviders({ network: 'testnet2', dataDir: '/tmp/sphere-data', tokensDir: '/tmp/tokens-data', oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' } });
+    const base = createNodeProviders({ network: 'testnet2', dataDir: '/tmp/sphere-data', oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' } });
     const providers = createWalletApiProviders(base, {
       baseUrl: 'https://wallet-api.unicity.network',
       network: 'testnet2',
