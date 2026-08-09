@@ -36,7 +36,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
       setTickCount(n => n + 1);
       setTickMessage({
         type: 'success',
-        text: `−${video.rate_per_30s.toFixed(6)} UCT → @${video.creator}`,
+        text: `−${video.rate_per_30s.toFixed(6)} WP → @${video.creator}`,
       });
       setTimeout(() => setTickMessage(null), 3000);
     } else {
@@ -44,7 +44,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
       setIsPlaying(false);
       setTickMessage({
         type: 'error',
-        text: 'Insufficient balance — please deposit UCT',
+        text: 'Insufficient balance — please buy WP',
       });
     }
   }, [user, video.rate_per_30s, video.creator]);
@@ -182,7 +182,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
             <h2 className="font-orbitron font-bold text-white text-lg">{video.title}</h2>
             <div className="flex items-center gap-3 mt-1">
               <span className="text-sm" style={{ color: '#ff6b00' }}>{video.creator}</span>
-              <span className="badge-warning">{video.rate_per_30s} UCT / 30s</span>
+              <span className="badge-warning">{video.rate_per_30s} WP / 30s</span>
             </div>
           </div>
           <motion.button
@@ -258,30 +258,30 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
             />
           )}
 
-          {isPlaying && currentSession && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="absolute top-4 right-4 p-3 rounded-lg"
-              style={{ background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,107,0,0.2)', backdropFilter: 'blur(10px)', zIndex: 5 }}
-            >
-              <div className="text-xs font-orbitron mb-1" style={{ color: '#ff6b0088', letterSpacing: '0.1em' }}>SESSION</div>
-              <div className="flex items-center gap-2 text-xs" style={{ color: '#888' }}>
-                <Clock size={10} style={{ color: '#ff6b0066' }} />
-                <span>{Math.floor(totalWatched / 60)}m {totalWatched % 60}s</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs mt-1" style={{ color: '#888' }}>
-                <Coins size={10} style={{ color: '#ff6b0066' }} />
-                <span style={{ color: '#ff6b00' }}>−{currentSession.totalSpent.toFixed(6)} UCT</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs mt-1" style={{ color: '#888' }}>
-                <Zap size={10} style={{ color: '#ff6b0066' }} />
-                <span>{currentSession.totalTicks} ticks</span>
-              </div>
-            </motion.div>
-          )}
-
           </div>
+
+        {isPlaying && currentSession && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 p-3 rounded-lg flex items-center gap-6"
+            style={{ background: '#0a0a0a', border: '1px solid rgba(255,107,0,0.2)' }}
+          >
+            <div className="text-xs font-orbitron" style={{ color: '#ff6b0088', letterSpacing: '0.1em' }}>SESSION</div>
+            <div className="flex items-center gap-2 text-xs" style={{ color: '#888' }}>
+              <Clock size={10} style={{ color: '#ff6b0066' }} />
+              <span>{Math.floor(totalWatched / 60)}m {totalWatched % 60}s</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs" style={{ color: '#888' }}>
+              <Coins size={10} style={{ color: '#ff6b0066' }} />
+              <span style={{ color: '#ff6b00' }}>−{currentSession.totalSpent.toFixed(6)} WP</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs" style={{ color: '#888' }}>
+              <Zap size={10} style={{ color: '#ff6b0066' }} />
+              <span>{currentSession.totalTicks} ticks</span>
+            </div>
+          </motion.div>
+        )}
 
         {/* Controls — now outside the video frame, no overlap */}
         <div className="mt-3 p-4 rounded-xl" style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}>
@@ -337,7 +337,7 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
               >
                 <Zap size={12} style={{ color: '#ff6b00' }} />
                 <span className="font-orbitron text-xs" style={{ color: '#ff6b00' }}>
-                  {video.rate_per_30s} UCT/30s
+                  {video.rate_per_30s} WP/30s
                 </span>
               </div>
             </div>
