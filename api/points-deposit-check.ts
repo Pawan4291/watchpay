@@ -22,11 +22,12 @@ export default async function handler(req: any, res: any) {
 
     await sphere.payments.receive();
     console.log('[WatchPay] agent wallet identity:', sphere.identity?.nametag, sphere.identity?.directAddress);
-    const history = await sphere.payments.history();
+const historyPage: any = await sphere.payments.history();
+    const historyItems: any[] = historyPage?.entries ?? [];
 
-    console.log('[WatchPay] raw history sample:', JSON.stringify(history?.slice?.(0, 3) ?? history, null, 2));
+    console.log('[WatchPay] raw history sample:', JSON.stringify(historyItems.slice(0, 3), null, 2));
 
-    const incoming = history.filter((h: any) => h.type === 'RECEIVED' && h.senderNametag === senderNametag);
+    const incoming = historyItems.filter((h: any) => h.type === 'RECEIVED' && h.senderNametag === senderNametag);
     console.log('[WatchPay] matched incoming count:', incoming.length, 'for senderNametag:', senderNametag);
 
     let creditedTotal = 0;
@@ -45,7 +46,7 @@ export default async function handler(req: any, res: any) {
       await supabase.from('wp_points').upsert({ chain_pubkey: chainPubkey, real_nametag: senderNametag, balance: newBalance, updated_at: new Date().toISOString() });
     }
 
-    return res.status(200).json({ credited: creditedTotal, historyCount: history?.length ?? 0 });
+    return res.status(200).json({ credited: creditedTotal, historyCount: historyItems.length });
   } catch (err: any) {
     console.error('[WatchPay] points-deposit-check crashed:', err);
     return res.status(500).json({ error: err.message ?? 'unknown error' });
