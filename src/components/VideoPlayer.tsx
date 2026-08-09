@@ -166,9 +166,18 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto"
       style={{ background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(10px)' }}
     >
+      <motion.button
+        onClick={handleClose}
+        whileHover={{ scale: 1.1, rotate: 90 }}
+        whileTap={{ scale: 0.9 }}
+        className="fixed top-4 right-4 p-2 rounded-lg z-[60]"
+        style={{ background: '#1a1a1a', color: '#fff', border: '1px solid rgba(255,107,0,0.3)' }}
+      >
+        <X size={20} />
+      </motion.button>
       <motion.div
         initial={{ scale: 0.9, y: 30 }}
         animate={{ scale: 1, y: 0 }}
@@ -178,36 +187,12 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
       >
         {/* Header */}
         {!isPlaying && (
-          <div className="flex items-center justify-between mb-4 sticky top-0 z-10" style={{ background: 'rgba(0,0,0,0.95)', paddingTop: '4px' }}>
-            <div>
-              <h2 className="font-orbitron font-bold text-white text-lg">{video.title}</h2>
-              <div className="flex items-center gap-3 mt-1">
-                <span className="text-sm" style={{ color: '#ff6b00' }}>{video.creator}</span>
-                <span className="badge-warning">{video.rate_per_30s} WP / 30s</span>
-              </div>
+          <div className="mb-4">
+            <h2 className="font-orbitron font-bold text-white text-lg">{video.title}</h2>
+            <div className="flex items-center gap-3 mt-1">
+              <span className="text-sm" style={{ color: '#ff6b00' }}>{video.creator}</span>
+              <span className="badge-warning">{video.rate_per_30s} WP / 30s</span>
             </div>
-            <motion.button
-              onClick={handleClose}
-              whileHover={{ scale: 1.1, rotate: 90 }}
-              whileTap={{ scale: 0.9 }}
-              className="p-2 rounded-lg"
-              style={{ background: '#1a1a1a', color: '#888' }}
-            >
-              <X size={20} />
-            </motion.button>
-          </div>
-        )}
-        {isPlaying && (
-          <div className="flex justify-end mb-2">
-            <motion.button
-              onClick={handleClose}
-              whileHover={{ scale: 1.1, rotate: 90 }}
-              whileTap={{ scale: 0.9 }}
-              className="p-2 rounded-lg"
-              style={{ background: '#1a1a1a', color: '#888' }}
-            >
-              <X size={18} />
-            </motion.button>
           </div>
         )}
 
