@@ -107,7 +107,13 @@ export default async function handler(req: any, res: any) {
       const historyPage: any = await sphere.payments.history();
       const historyItems: any[] = historyPage?.entries ?? [];
 
-      const incoming = historyItems.filter((h: any) => h.type === 'RECEIVED' && h.senderNametag === senderNametag);
+      console.log('[WatchPay] first 3 entries raw:', JSON.stringify(historyItems.slice(0, 3), null, 2));
+
+      const incoming = historyItems.filter((h: any) => {
+        const type = (h.type ?? '').toString().toUpperCase();
+        const sender = (h.senderNametag ?? h.sender?.nametag ?? '').toString().replace('@', '');
+        return type === 'RECEIVED' && sender === senderNametag.replace('@', '');
+      });
 
       let creditedTotal = 0;
       for (const tx of incoming) {
