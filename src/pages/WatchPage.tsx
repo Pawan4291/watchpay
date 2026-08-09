@@ -180,7 +180,7 @@ export function WatchPage() {
       setActiveSessions(d.activeSessions ?? 0);
       setCreatorsEarning(d.creatorsEarning ?? 0);
     }).catch(() => {});
-    fetch(`/api/videos-list?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()).then(d => setVideos(d.videos ?? [])).catch(() => {}).finally(() => setVideosLoading(false));
+    fetch(`/api/video?action=list&t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()).then(d => setVideos(d.videos ?? [])).catch(() => {}).finally(() => setVideosLoading(false));
   }, []);
 
   const { user } = useStore();

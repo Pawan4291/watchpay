@@ -28,7 +28,7 @@ export function EarningsPage() {
       const [s, p, v] = await Promise.all([
         fetch(`/api/settlements?creator_id=${user.id}`, { cache: 'no-store' }).then(r => r.json()).catch(() => []),
         fetch(`/api/pending-for-creator?creator_id=${user.id}`, { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
-        fetch(`/api/video-earnings?creator_id=${user.id}`, { cache: 'no-store' }).then(r => r.json()).catch(() => []),
+        fetch(`/api/video?action=earnings&creator_id=${user.id}`, { cache: 'no-store' }).then(r => r.json()).catch(() => []),
       ]);
       setSettlements(s);
       setPendingAmount(p.amount_owed ?? 0);

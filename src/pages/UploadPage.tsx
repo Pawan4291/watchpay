@@ -68,7 +68,7 @@ export function UploadPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/video-upload', {
+      const res = await fetch('/api/video?action=upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

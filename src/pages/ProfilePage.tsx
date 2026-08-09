@@ -28,7 +28,7 @@ function MyVideosSection({ user }: { user: { id: string } }) {
 
   const handleConfirmDelete = async (videoId: string) => {
     setConfirmingId(null);
-    await fetch('/api/video-delete', {
+    await fetch('/api/video?action=delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ videoId, chainPubkey: user.id }),
