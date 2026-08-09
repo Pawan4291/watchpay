@@ -85,7 +85,7 @@ export async function loginWithSphere(): Promise<void> {
 }
 
 async function finishLogin(identity: { chainPubkey: string; nametag?: string; directAddress?: string }): Promise<void> {
-  const res = await fetch(`/api/points-get?chainPubkey=${encodeURIComponent(identity.chainPubkey)}`).then(r => r.json());
+  const res = await fetch(`/api/points?action=get&chainPubkey=${encodeURIComponent(identity.chainPubkey)}`).then(r => r.json());
 
   const realUser: User = {
     id: identity.chainPubkey,
@@ -108,7 +108,7 @@ export async function disconnectWallet(): Promise<void> {
 
 export async function refreshBalance(): Promise<void> {
   if (!storeState.user) return;
-  const res = await fetch(`/api/points-get?chainPubkey=${encodeURIComponent(storeState.user.id)}`).then(r => r.json());
+  const res = await fetch(`/api/points?action=get&chainPubkey=${encodeURIComponent(storeState.user.id)}`).then(r => r.json());
   setStore({
     wallet: { balance: res.balance ?? 0, lastUpdated: new Date().toISOString() },
   });
@@ -151,7 +151,7 @@ export function recordTick(rate: number): boolean {
     currentSession: newSession,
   });
 
-  fetch('/api/points-tick', {
+  fetch('/api/points?action=tick', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chainPubkey: storeState.user?.id, videoId: currentSession.videoId, amount: rate }),
@@ -186,7 +186,7 @@ export async function depositUCT(amount: number): Promise<{ success: boolean; tx
     const result = await requestDeposit(client, WATCHPAY_AGENT_NAMETAG, uctToSmallestUnit(amount));
     console.log('[WatchPay] deposit intent result:', result);
 
-    const check = await fetch(`/api/points-deposit-check?chainPubkey=${encodeURIComponent(storeState.user.id)}&senderNametag=${encodeURIComponent(storeState.user.realNametag ?? '')}`).then(r => r.json());
+const check = await fetch(`/api/points?action=deposit-check&chainPubkey=${encodeURIComponent(storeState.user.id)}&senderNametag=${encodeURIComponent(storeState.user.realNametag ?? '')}`).then(r => r.json());
     console.log('[WatchPay] deposit-check response:', check);
 
     if (check.credited > 0 && storeState.wallet) {
@@ -208,7 +208,7 @@ export async function withdrawUCT(amount: number): Promise<{ success: boolean; t
     return { success: false };
   }
   try {
-    const res = await fetch('/api/points-withdraw', {
+    const res = await fetch('/api/points?action=withdraw', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chainPubkey: storeState.user.id, realNametag: storeState.user.realNametag, amount }),
