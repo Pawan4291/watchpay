@@ -18,9 +18,8 @@ export function FloatingNotifications() {
     const interval = setInterval(async () => {
       // fetch latest row from your real agent_log table (Supabase)
       const res = await fetch('/api/agent-logs');
-      const logs = await res.json();
-      const log = Array.isArray(logs) ? logs[0] : null;
-      if (!log || !log.details) return;
+      const log = await res.json();
+      if (!log) return;
       const notif: Notification = {
         id: Date.now(),
         type: log.action_type === 'settlement' ? 'settlement' : 'tick',
