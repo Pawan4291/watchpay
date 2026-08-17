@@ -17,7 +17,7 @@ export function FloatingNotifications() {
   useEffect(() => {
     const interval = setInterval(async () => {
       // fetch latest row from your real agent_log table (Supabase)
-      const res = await fetch('/api/agent-logs');
+      const res = await fetch('/api/agent/latest-log');
       const log = await res.json();
       if (!log) return;
       const notif: Notification = {
